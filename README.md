@@ -7,3 +7,7 @@ A project for hosting a 'choose your own adventure' chatbot
 ## run app using:
 uvicorn app.main:app --reload
 
+
+## generate initial DB 
+alembic revision --autogenerate - "initial tables"
+alembic upgrade head
