@@ -9,5 +9,5 @@ uvicorn app.main:app --reload
 
 
 ## generate initial DB 
-alembic revision --autogenerate - "initial tables"
+alembic revision --autogenerate - "initial tables"  
 alembic upgrade head
