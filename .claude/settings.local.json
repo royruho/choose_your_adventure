@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls /c/Users/Roy/Desktop/git_projects/choose_your_adventure_claude/requirements*)"
+    ]
+  }
+}
