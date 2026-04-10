@@ -152,7 +152,6 @@ async def llm_chat(req: ChatRequest, db: Session = Depends(get_db), current_user
                 # Send both so either provider picks up the right field.
                 body = {
                     "model": model,
-                    "max_tokens": max_tokens,
                     "max_completion_tokens": max_tokens,
                     "messages": openai_messages,
                     # Force pure JSON output — required for reliable game parsing.

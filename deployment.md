@@ -41,12 +41,22 @@ copy .env.example .env
 Now open `.env` in Notepad (or any text editor) and fill in your values:
 
 ```env
-# Your Gemini API key from Google AI Studio
-LLM_API_KEY=AIza...your_key_here...
+# ── LLM provider (choose one) ──────────────────────────────────────
+# Groq (recommended — fast, free, no quota issues)
+LLM_ENDPOINT=https://api.groq.com/openai/v1/chat/completions
+LLM_API_KEY=gsk_...your_groq_key_here...
+LLM_MODEL=llama-3.3-70b-versatile
 
-# Leave these as-is for Gemini
-LLM_ENDPOINT=https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
-LLM_MODEL=gemini-2.0-flash
+# Gemini alternative (free tier, but may have regional quota restrictions)
+# LLM_ENDPOINT=https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
+# LLM_API_KEY=AIza...your_gemini_key...
+# LLM_MODEL=gemini-2.0-flash
+
+# Anthropic (paid)
+# LLM_ENDPOINT=https://api.anthropic.com/v1/messages
+# LLM_API_KEY=sk-ant-...
+# LLM_MODEL=claude-sonnet-4-20250514
+
 LLM_MAX_TOKENS=1000
 
 # Make up any random string — used to sign login tokens
@@ -56,12 +66,17 @@ SECRET_KEY=some-long-random-string-change-this
 CORS_ORIGINS=http://localhost:5173
 ```
 
-> **How to get a free Gemini API key:**
-> 1. Go to [aistudio.google.com](https://aistudio.google.com)
-> 2. Sign in with your Google account
-> 3. Click **"Get API key"** in the left sidebar
-> 4. Click **"Create API key"** — copy the key and paste it into your `.env`
-> 5. Free tier gives you 1,500 requests/day and 1 million tokens/day
+> **How to get a free Groq API key (recommended):**
+> 1. Go to [console.groq.com](https://console.groq.com)
+> 2. Sign up (free, no credit card)
+> 3. Click **"API Keys"** → **"Create API Key"**
+> 4. Copy the key (starts with `gsk_`) and paste it into your `.env`
+> 5. Free tier: 14,400 requests/day on Llama 3.3 70B — more than enough
+
+> **How to get a free Gemini API key (alternative):**
+> 1. Go to [aistudio.google.com](https://aistudio.google.com) (must use AI Studio, not Google Cloud Console)
+> 2. Click **"Get API key"** → **"Create API key in new project"**
+> 3. Free tier: 1,500 requests/day — note: not available in all regions
 
 ---
 
@@ -258,9 +273,9 @@ git push
    | Key | Value |
    |---|---|
    | `DATABASE_URL` | Your Aiven connection string from Step 1 |
-   | `LLM_API_KEY` | Your Gemini API key |
-   | `LLM_ENDPOINT` | `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` |
-   | `LLM_MODEL` | `gemini-2.0-flash` |
+   | `LLM_API_KEY` | Your Groq API key (`gsk_...`) |
+   | `LLM_ENDPOINT` | `https://api.groq.com/openai/v1/chat/completions` |
+   | `LLM_MODEL` | `llama-3.3-70b-versatile` |
    | `LLM_MAX_TOKENS` | `1000` |
    | `SECRET_KEY` | Any long random string (e.g. generate one at [randomkeygen.com](https://randomkeygen.com)) |
    | `CORS_ORIGINS` | `https://your-app.vercel.app` (you'll update this after Vercel deploy) |
@@ -363,9 +378,9 @@ Both services watch your `main` branch and redeploy automatically on every push.
 | Variable | Description | Example |
 |---|---|---|
 | `DATABASE_URL` | Database connection string | `sqlite:///./data/stories.db` or Aiven URL |
-| `LLM_ENDPOINT` | URL of the LLM API | `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` |
-| `LLM_API_KEY` | Your API key | `AIza...` |
-| `LLM_MODEL` | Model name | `gemini-2.0-flash` |
+| `LLM_ENDPOINT` | URL of the LLM API | `https://api.groq.com/openai/v1/chat/completions` |
+| `LLM_API_KEY` | Your API key | `gsk_...` (Groq) or `AIza...` (Gemini) |
+| `LLM_MODEL` | Model name | `llama-3.3-70b-versatile` |
 | `LLM_MAX_TOKENS` | Max tokens per response | `1000` |
 | `SECRET_KEY` | JWT signing secret | Any long random string |
 | `CORS_ORIGINS` | Comma-separated allowed origins | `http://localhost:5173` |

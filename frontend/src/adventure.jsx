@@ -17,6 +17,14 @@ const TR = {
   teenSub:          { English: "Moderate action, light tension, engaging vocabulary", Hebrew: "אקשן מתון, מתח קל, אוצר מילים מרתק" },
   adult:            { English: "Adult (18+)", Hebrew: "מבוגרים (18+)" },
   adultSub:         { English: "Full range of themes, vivid descriptions, mature content", Hebrew: "מגוון נושאים מלא, תיאורים חיים, תוכן בוגר" },
+  storyDuration:    { English: "Adventure Length", Hebrew: "אורך ההרפתקה" },
+  storyDurationSub: { English: "How many turns should the adventure last?", Hebrew: "כמה תורות תימשך ההרפתקה?" },
+  perspective:      { English: "Narrative Perspective", Hebrew: "נקודת מבט" },
+  perspectiveSub:   { English: "How should the story refer to you?", Hebrew: "איך הסיפור יתייחס אליך?" },
+  firstPerson:      { English: "First Person", Hebrew: "גוף ראשון" },
+  firstPersonEx:    { English: "\"I drew my sword and stepped into the dark\"", Hebrew: "\"שלפתי את חרבי וצעדתי אל החושך\"" },
+  secondPerson:     { English: "Second Person", Hebrew: "גוף שני" },
+  secondPersonEx:   { English: "\"You draw your sword and step into the dark\"", Hebrew: "\"אתה שולף את חרבך וצועד אל החושך\"" },
   storyPacing:      { English: "Story Pacing", Hebrew: "קצב הסיפור" },
   storyPacingSub:   { English: "How detailed should each story beat be?", Hebrew: "כמה מפורט יהיה כל חלק בסיפור?" },
   short:            { English: "Quick & Punchy", Hebrew: "מהיר וקצר" },
@@ -66,6 +74,11 @@ const TR = {
   storyUnfolds:     { English: "The story unfolds...", Hebrew: "הסיפור מתגלה..." },
   turn:             { English: "Turn", Hebrew: "תור" },
   sAdventure:       { English: "'s Adventure", Hebrew: " - הרפתקה" },
+  exportStory:      { English: "Export Story", Hebrew: "ייצא סיפור" },
+  saveGame:         { English: "Save Game", Hebrew: "שמור משחק" },
+  loadGame:         { English: "Load Game", Hebrew: "טען משחק" },
+  loadGameSub:      { English: "Resume a saved adventure", Hebrew: "המשך הרפתקה שמורה" },
+  loadError:        { English: "Could not load save file — file may be corrupted.", Hebrew: "לא ניתן לטעון את קובץ השמירה — הקובץ עלול להיות פגום." },
   fantasy:          { English: "Fantasy", Hebrew: "פנטזיה" },
   scifi:            { English: "Sci-Fi", Hebrew: "מדע בדיוני" },
   reality:          { English: "Reality", Hebrew: "מציאות" },
@@ -79,28 +92,28 @@ const THEMES = {
     primary: "#C9A44A", secondary: "#4A7C3F", accent: "#8B2500", text: "#E8D5B0", textMuted: "#9C8B6E",
     border: "#5C4A2A", heading: "'Cinzel', serif", body: "'Crimson Text', serif",
     bgImage: "radial-gradient(ellipse at 20% 80%, rgba(201,164,74,0.08) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(74,124,63,0.06) 0%, transparent 50%)",
-    icon: "⚔️", particle: "✦",
+    icon: "⚔️", particle: "✦", icons: ["⚔️", "🧙", "🐉", "🏰", "🌿"],
   },
   scifi: {
     nameKey: "scifi", bg: "#060B14", bgCard: "rgba(10, 25, 50, 0.85)", bgStory: "rgba(0, 240, 255, 0.04)",
     primary: "#00F0FF", secondary: "#8B5CF6", accent: "#FF3366", text: "#C8E0F0", textMuted: "#5A7A90",
     border: "#1A3050", heading: "'Orbitron', sans-serif", body: "'Fira Code', monospace",
     bgImage: "radial-gradient(ellipse at 50% 0%, rgba(0,240,255,0.05) 0%, transparent 50%), radial-gradient(ellipse at 80% 100%, rgba(139,92,246,0.05) 0%, transparent 50%)",
-    icon: "🚀", particle: "◇",
+    icon: "🚀", particle: "◇", icons: ["🚀", "🤖", "👾", "🛸", "⚡"],
   },
   reality: {
     nameKey: "reality", bg: "#0F1114", bgCard: "rgba(28, 32, 42, 0.85)", bgStory: "rgba(100, 180, 255, 0.04)",
     primary: "#64B5F6", secondary: "#4DB6AC", accent: "#EF5350", text: "#D0D8E8", textMuted: "#6B7A90",
     border: "#2A3040", heading: "'DM Sans', sans-serif", body: "'Merriweather', serif",
     bgImage: "radial-gradient(ellipse at 40% 90%, rgba(100,181,246,0.06) 0%, transparent 50%), radial-gradient(ellipse at 60% 10%, rgba(77,182,172,0.05) 0%, transparent 50%)",
-    icon: "🌍", particle: "●",
+    icon: "🌍", particle: "●", icons: ["🌍", "🏙️", "🚗", "💼", "🗺️"],
   },
   mystery: {
     nameKey: "mystery", bg: "#0D0D1A", bgCard: "rgba(22, 22, 46, 0.85)", bgStory: "rgba(226, 177, 76, 0.04)",
     primary: "#E2B14C", secondary: "#4A3078", accent: "#C0392B", text: "#D0C8E0", textMuted: "#6A6080",
     border: "#2A2050", heading: "'Playfair Display', serif", body: "'Source Serif 4', serif",
     bgImage: "radial-gradient(ellipse at 50% 50%, rgba(74,48,120,0.08) 0%, transparent 60%), radial-gradient(ellipse at 20% 80%, rgba(226,177,76,0.04) 0%, transparent 40%)",
-    icon: "🔍", particle: "◆",
+    icon: "🔍", particle: "◆", icons: ["🔍", "🕯️", "🗝️", "💀", "🌫️"],
   },
 };
 
@@ -124,7 +137,9 @@ const LANGUAGES = [
 ];
 
 const FONTS_URL = "https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Orbitron:wght@400;700;900&family=Fira+Code:wght@400;500&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap";
-const SETUP_STEPS = ["language", "genre", "age", "length", "rules", "prompt", "character"];
+const SETUP_STEPS = ["language", "genre", "age", "length", "duration", "rules", "perspective", "prompt", "character"];
+const SUMMARY_EVERY = 5;   // run summarization every N turns
+const WINDOW_SIZE   = 12;  // storyLog entries (≈6 turns) sent to LLM when summary exists
 const RTL_LANGS = ["Hebrew", "Arabic"];
 
 // ─── SHARED COMPONENTS ─────────────────────────────────────────
@@ -137,6 +152,22 @@ function FloatingParticles({ theme }) {
           fontSize: `${8 + Math.random() * 14}px`, opacity: 0.08 + Math.random() * 0.12, color: theme.primary,
           animation: `float${i % 3} ${8 + Math.random() * 12}s ease-in-out infinite`, animationDelay: `${Math.random() * 5}s`,
         }}>{theme.particle}</span>
+      ))}
+    </div>
+  );
+}
+
+function GenreIconStrip({ theme }) {
+  if (!theme.icons) return null;
+  return (
+    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 14, margin: "10px 0" }}>
+      {theme.icons.map((ic, i) => (
+        <span key={i} style={{
+          fontSize: i === 0 ? 22 : 16,
+          opacity: i === 0 ? 0.7 : 0.35,
+          filter: "drop-shadow(0 0 6px currentColor)",
+          transition: "all 0.4s ease",
+        }}>{ic}</span>
       ))}
     </div>
   );
@@ -197,11 +228,78 @@ function inputStyle(theme) {
   return { width: "100%", background: `${theme.bg}88`, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "10px 12px", color: theme.text, fontFamily: theme.body, fontSize: 14, outline: "none", boxSizing: "border-box" };
 }
 
+// ─── EXPORT / SAVE / LOAD UTILITIES ───────────────────────────
+
+function exportStoryAsText({ storyLog, config, character, stats, turnCount, gameOver }) {
+  const sep = "═".repeat(42);
+  const title = `${character.name}'s ${config.genre ? config.genre.charAt(0).toUpperCase() + config.genre.slice(1) : ""} Adventure`;
+  const lines = [
+    sep,
+    `  ${title}`,
+    sep,
+    `Character : ${character.name}${character.gender ? ` (${character.gender}` : ""}${character.age ? `, age ${character.age}` : ""}${character.gender ? ")" : ""}`,
+    `Genre     : ${config.genre}  |  Language: ${config.language}`,
+    `Content   : ${config.ageTier}  |  Pacing: ${config.responseLength}`,
+    `Perspective: ${config.perspective === "first" ? "First person (I)" : "Second person (You)"}`,
+    `Death possible: ${config.deathPossible ? "Yes" : "No"}  |  Stats tracked: ${config.trackStats ? "Yes" : "No"}`,
+    character.skills?.length ? `Skills    : ${character.skills.join(", ")}` : "",
+    config.storyPrompt ? `Premise   : ${config.storyPrompt}` : "",
+    `Exported  : ${new Date().toLocaleString()}`,
+    sep,
+    "",
+  ].filter(l => l !== null);
+
+  let turn = 0;
+  storyLog.forEach(entry => {
+    if (entry.role === "narrator") {
+      turn++;
+      lines.push(`[Turn ${turn} — Narrator]`);
+      lines.push(entry.text);
+    } else {
+      lines.push(`[Turn ${turn} — ${character.name}]`);
+      lines.push(entry.text);
+    }
+    lines.push("");
+  });
+
+  if (gameOver) lines.push("*** ADVENTURE ENDED ***", "");
+
+  if (config.trackStats) {
+    lines.push(sep, "FINAL STATS", sep);
+    lines.push(`Health    : ${stats.health}/100`);
+    if (stats.inventory?.length) lines.push(`Inventory : ${stats.inventory.join(", ")}`);
+    const rels = Object.entries(stats.relationships || {});
+    if (rels.length) { lines.push("Relations :"); rels.forEach(([k, v]) => lines.push(`  ${k}: ${v}`)); }
+    lines.push(sep);
+  }
+
+  return lines.join("\n");
+}
+
+function triggerDownload(filename, content, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function buildSavePayload({ config, character, stats, storyLog, choices, turnCount, gameOver }) {
+  return { version: 1, savedAt: new Date().toISOString(), config, character, stats, storyLog, choices, turnCount, gameOver };
+}
+
+function loadAndValidateSave(json) {
+  const data = JSON.parse(json);
+  if (!data.version || !data.config || !data.character || !Array.isArray(data.storyLog))
+    throw new Error("Invalid save file");
+  return data;
+}
+
 // ─── MAIN APP ──────────────────────────────────────────────────
 export default function AdventureGame() {
   const [phase, setPhase] = useState("setup");
   const [setupStep, setSetupStep] = useState(0);
-  const [config, setConfig] = useState({ genre: "", language: "English", ageTier: "", responseLength: "", deathPossible: null, trackStats: null, storyPrompt: "" });
+  const [config, setConfig] = useState({ genre: "", language: "English", ageTier: "", responseLength: "", storyLength: 15, deathPossible: null, trackStats: null, perspective: "second", storyPrompt: "" });
   const [character, setCharacter] = useState({ name: "", gender: "", age: "", appearance: "", skills: [] });
   const [storyLog, setStoryLog] = useState([]);
   const [stats, setStats] = useState({ health: 100, inventory: [], relationships: {} });
@@ -211,7 +309,9 @@ export default function AdventureGame() {
   const [turnCount, setTurnCount] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [storyId, setStoryId] = useState(null);  // DB story ID for persistence
+  const [storySummary, setStorySummary] = useState({ narrative: "", world: null });
   const storyEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const lang = config.language;
   const isRTL = RTL_LANGS.includes(lang);
@@ -247,6 +347,8 @@ export default function AdventureGame() {
 
 LANGUAGE: Respond ENTIRELY in ${config.language}. ALL story text and choices must be in ${config.language}.
 
+PERSPECTIVE: ${config.perspective === "first" ? 'Write in FIRST PERSON. The character narrates as themselves — use "I", "my", "me". Example: "I drew my sword and stepped into the dark."' : 'Write in SECOND PERSON. Address the player directly — use "you", "your". Example: "You draw your sword and step into the dark."'}
+
 CHARACTER: Name: ${character.name || "The Adventurer"}, Gender: ${character.gender || "unspecified"}, Age: ${character.age || "unknown"}, Appearance: ${character.appearance || "unspecified"}, Skills: ${skillsEN.join(", ") || "none"}
 
 CONTENT: ${ageRules[config.ageTier] || ageRules.teen}
@@ -255,11 +357,30 @@ ${config.deathPossible ? "DEATH IS POSSIBLE if very poor choices are made." : "D
 ${config.trackStats ? 'TRACK STATS: Include "stats" object with health (0-100), inventory array, relationships object.' : ""}
 SKILLS: When situations relate to character skills, mention the skill and give favorable outcomes.
 ${config.storyPrompt ? `PREMISE: ${config.storyPrompt}` : "Create an original compelling opening."}
+${storySummary.narrative ? `
+STORY CONTEXT (events before the recent turns — stay consistent, never contradict these):
+${storySummary.narrative}${storySummary.world?.npcs && Object.keys(storySummary.world.npcs).length ? `
+NPCs: ${Object.entries(storySummary.world.npcs).map(([k, v]) => `${k} (${v})`).join(", ")}` : ""}${storySummary.world?.locations?.length ? `
+Locations visited: ${storySummary.world.locations.join(", ")}` : ""}${storySummary.world?.decisions?.length ? `
+Key decisions made: ${storySummary.world.decisions.join("; ")}` : ""}${storySummary.world?.threads?.length ? `
+Active plot threads: ${storySummary.world.threads.join("; ")}` : ""}` : ""}
+
+STORY ARC: This adventure is planned for exactly ${config.storyLength} turns. Current turn: ${turnCount}.
+${(() => {
+  const total = config.storyLength;
+  const pct = turnCount / total;
+  if (turnCount === 0)           return "PHASE — OPENING: Establish the world, character background, and the inciting situation.";
+  if (turnCount >= total)        return `PHASE — FINALE (turn ${turnCount}/${total}): This is the LAST turn. Deliver a satisfying conclusion to all story threads. Set gameOver to true.`;
+  if (turnCount >= total - 1)    return `PHASE — CLIMAX (turn ${turnCount}/${total}): The story ends next turn. Bring all threads to a head. Make the final choice feel decisive.`;
+  if (pct < 0.35)                return `PHASE — EARLY (turn ${turnCount}/${total}): Develop the world, introduce complications, build toward the central conflict.`;
+  if (pct < 0.65)                return `PHASE — MIDDLE (turn ${turnCount}/${total}): Escalate tension, raise stakes, deepen the conflict. Introduce a twist or reversal.`;
+  return                                `PHASE — LATE (turn ${turnCount}/${total}): Push toward the climax. Consequences mount, resolution is ${total - turnCount} turn(s) away.`;
+})()}
 
 RESPOND WITH VALID JSON ONLY (no markdown fences):
 {"story":"...","choices":["...","...","..."],${config.trackStats ? '"stats":{"health":100,"inventory":[],"relationships":{}},' : ''}"gameOver":false,"gameOverReason":""}
 Provide 2-5 meaningfully different choices.`;
-  }, [config, character, isHebrew]);
+  }, [config, character, isHebrew, turnCount, storySummary]);
 
   // ─── BACKEND CALL ──────────────────────────────────────────────
   const callAPI = useCallback(async (messages, persistOpts = {}) => {
@@ -274,6 +395,36 @@ Provide 2-5 meaningfully different choices.`;
       };
     }
   }, [buildSystemPrompt, isHebrew]);
+
+  // ─── BACKGROUND SUMMARIZER ─────────────────────────────────────
+  const triggerSummarize = useCallback(async (fullLog, currentSummary) => {
+    const SUMMARIZE_SYSTEM =
+      `You track story continuity for an interactive adventure game. ` +
+      `Analyze the story and produce a compact JSON summary of all important facts. ` +
+      `RESPOND WITH VALID JSON ONLY (no markdown fences):\n` +
+      `{"narrative":"2-3 sentences covering key events and current situation","world":{"npcs":{"CharacterName":"relationship/status"},"locations":["place — notes"],"decisions":["decision made"],"threads":["active plot thread"]}}`;
+
+    const parts = [];
+    if (currentSummary.narrative) {
+      parts.push(`PREVIOUS SUMMARY: ${currentSummary.narrative}`);
+      if (currentSummary.world) parts.push(`WORLD STATE: ${JSON.stringify(currentSummary.world)}`);
+      parts.push("NEW EVENTS TO INCORPORATE:");
+      fullLog.slice(-(SUMMARY_EVERY * 2)).forEach(e =>
+        parts.push(e.role === "narrator" ? `Narrator: ${e.text}` : `Player: ${e.text}`)
+      );
+    } else {
+      fullLog.forEach(e =>
+        parts.push(e.role === "narrator" ? `Narrator: ${e.text}` : `Player: ${e.text}`)
+      );
+    }
+
+    try {
+      const result = await api.chat(SUMMARIZE_SYSTEM, [{ role: "user", content: parts.join("\n\n") }]);
+      if (result?.narrative) setStorySummary(result);
+    } catch (e) {
+      console.warn("Story summarization failed (non-critical):", e);
+    }
+  }, []);
 
   const startAdventure = async () => {
     setPhase("game");
@@ -290,8 +441,13 @@ Provide 2-5 meaningfully different choices.`;
       // Not logged in — play without persistence
     }
 
-    const firstMessage = [{ role: "user", content: "Begin the adventure. Set the scene and present the first choices." }];
-    const persistOpts = sid ? { story_id: sid, turn_number: 0, user_content: "Begin the adventure." } : {};
+    const openingLength = {
+      short:  "3-4 sentences",
+      medium: "6-8 sentences (roughly 2 paragraphs)",
+      long:   "4-5 rich, descriptive paragraphs",
+    }[config.responseLength] || "6-8 sentences";
+    const firstMessage = [{ role: "user", content: `Begin the adventure with an opening of ${openingLength}. Cover all three of these: (1) a brief background on ${character.name} — who they are, their personality, and what has shaped them; (2) the world they live in — its tone, state, and defining features; (3) the current situation — what is happening right now that sets the story in motion. End with 2-5 meaningful choices.` }];
+    const persistOpts = sid ? { story_id: sid, turn_number: 0, user_content: "Begin the adventure." } : {};  // short label for DB
     const result = await callAPI(firstMessage, persistOpts);
     setStoryLog([{ role: "narrator", text: result.story }]);
     setChoices(result.choices || []);
@@ -305,10 +461,25 @@ Provide 2-5 meaningfully different choices.`;
     setLoading(true);
     setStoryLog(prev => [...prev, { role: "player", text: choiceText }]);
     setChoices([]);
-    const history = [{ role: "user", content: "Begin the adventure." }];
-    for (const entry of storyLog) {
-      if (entry.role === "narrator") history.push({ role: "assistant", content: JSON.stringify({ story: entry.text, choices: [] }) });
-      else history.push({ role: "user", content: `Player chose: "${entry.text}"` });
+
+    // Build history — sliding window when a summary covers the earlier turns
+    let history;
+    if (storySummary.narrative && storyLog.length > WINDOW_SIZE) {
+      let windowLog = storyLog.slice(-WINDOW_SIZE);
+      // Ensure history starts with a player (user) entry
+      const firstPlayer = windowLog.findIndex(e => e.role === "player");
+      if (firstPlayer > 0) windowLog = windowLog.slice(firstPlayer);
+      history = [{ role: "user", content: "Continue the adventure. Story context is in the system prompt." }];
+      for (const entry of windowLog) {
+        if (entry.role === "narrator") history.push({ role: "assistant", content: JSON.stringify({ story: entry.text, choices: [] }) });
+        else history.push({ role: "user", content: `Player chose: "${entry.text}"` });
+      }
+    } else {
+      history = [{ role: "user", content: `Begin the adventure with an opening covering ${character.name}'s background, the world, and the current situation.` }];
+      for (const entry of storyLog) {
+        if (entry.role === "narrator") history.push({ role: "assistant", content: JSON.stringify({ story: entry.text, choices: [] }) });
+        else history.push({ role: "user", content: `Player chose: "${entry.text}"` });
+      }
     }
     history.push({ role: "user", content: `Player chose: "${choiceText}"` });
 
@@ -318,8 +489,16 @@ Provide 2-5 meaningfully different choices.`;
     setChoices(result.choices || []);
     if (result.stats && config.trackStats) setStats(result.stats);
     if (result.gameOver) { setGameOver(true); setChoices([]); }
-    setTurnCount(prev => prev + 1);
+
+    const newTurnCount = turnCount + 1;
+    setTurnCount(newTurnCount);
     setLoading(false);
+
+    // Fire background summarization every SUMMARY_EVERY turns — no await, doesn't block player
+    if (newTurnCount % SUMMARY_EVERY === 0) {
+      const fullNewLog = [...storyLog, { role: "player", text: choiceText }, { role: "narrator", text: result.story }];
+      triggerSummarize(fullNewLog, storySummary);
+    }
   };
 
   const handleCustomAction = () => { if (customAction.trim()) { makeChoice(customAction.trim()); setCustomAction(""); } };
@@ -329,6 +508,44 @@ Provide 2-5 meaningfully different choices.`;
     setStats({ health: 100, inventory: [], relationships: {} });
     setGameOver(false); setTurnCount(0); setCustomAction(""); setStoryId(null);
     setCharacter({ name: "", gender: "", age: "", appearance: "", skills: [] });
+    setStorySummary({ narrative: "", world: null });
+  };
+
+  const handleExport = () => {
+    const content = exportStoryAsText({ storyLog, config, character, stats, turnCount, gameOver });
+    triggerDownload(`${character.name}-adventure-${Date.now()}.txt`, content, "text/plain;charset=utf-8");
+  };
+
+  const handleSaveGame = () => {
+    const payload = { ...buildSavePayload({ config, character, stats, storyLog, choices, turnCount, gameOver }), storySummary };
+    triggerDownload(`${character.name}-save-${Date.now()}.json`, JSON.stringify(payload, null, 2), "application/json");
+  };
+
+  const handleLoadGame = () => fileInputRef.current?.click();
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const save = loadAndValidateSave(ev.target.result);
+        setConfig(save.config);
+        setCharacter(save.character);
+        setStats(save.stats || { health: 100, inventory: [], relationships: {} });
+        setStoryLog(save.storyLog);
+        setChoices(save.choices || []);
+        setTurnCount(save.turnCount || 0);
+        setGameOver(save.gameOver || false);
+        setStoryId(null);
+        setStorySummary(save.storySummary || { narrative: "", world: null });
+        setPhase("game");
+      } catch {
+        alert(t("loadError"));
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
   };
 
   // ─── SETUP STEPS RENDER ───────────────────────────────────────
@@ -353,13 +570,24 @@ Provide 2-5 meaningfully different choices.`;
         return (
           <SetupCard theme={theme} active isRTL={isRTL} title={t("chooseWorld")} subtitle={t("chooseWorldSub")}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              {Object.entries(THEMES).map(([key, th]) => (
-                <OptionButton key={key} theme={theme} selected={config.genre === key}
-                  onClick={() => { setConfig(c => ({ ...c, genre: key })); setCharacter(c => ({ ...c, skills: [] })); }}>
-                  <span style={{ fontSize: 28, display: "block", marginBottom: 6 }}>{th.icon}</span>
-                  <span style={{ fontFamily: th.heading, fontWeight: 700, fontSize: 16 }}>{t(th.nameKey)}</span>
-                </OptionButton>
-              ))}
+              {Object.entries(THEMES).map(([key, th]) => {
+                const selected = config.genre === key;
+                return (
+                  <OptionButton key={key} theme={theme} selected={selected}
+                    onClick={() => { setConfig(c => ({ ...c, genre: key })); setCharacter(c => ({ ...c, skills: [] })); }}>
+                    {selected ? (
+                      <div style={{ display: "flex", justifyContent: "center", gap: 4, marginBottom: 8 }}>
+                        {th.icons.map((ic, i) => (
+                          <span key={i} style={{ fontSize: i === 0 ? 26 : 18, opacity: i === 0 ? 1 : 0.75 }}>{ic}</span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: 28, display: "block", marginBottom: 6 }}>{th.icon}</span>
+                    )}
+                    <span style={{ fontFamily: th.heading, fontWeight: 700, fontSize: 16 }}>{t(th.nameKey)}</span>
+                  </OptionButton>
+                );
+              })}
             </div>
             <NavButtons {...nav} theme={THEMES[config.genre] || theme} onBack={() => setSetupStep(0)} onNext={() => setSetupStep(2)} canNext={!!config.genre} />
           </SetupCard>
@@ -394,6 +622,28 @@ Provide 2-5 meaningfully different choices.`;
             <NavButtons {...nav} onBack={() => setSetupStep(2)} onNext={() => setSetupStep(4)} canNext={!!config.responseLength} />
           </SetupCard>
         );
+      case "duration":
+        return (
+          <SetupCard theme={theme} active isRTL={isRTL} title={t("storyDuration")} subtitle={t("storyDurationSub")}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {[
+                { turns: 5,  icon: "⚡", label: "Sprint",   desc: "~5 turns — a sharp, focused story" },
+                { turns: 10, icon: "🏃", label: "Short",    desc: "~10 turns — a complete adventure" },
+                { turns: 20, icon: "📖", label: "Standard", desc: "~20 turns — room to explore" },
+                { turns: 40, icon: "🏔️", label: "Epic",     desc: "~40 turns — a grand saga" },
+              ].map(({ turns, icon, label, desc }) => (
+                <OptionButton key={turns} theme={theme} selected={config.storyLength === turns}
+                  onClick={() => setConfig(c => ({ ...c, storyLength: turns }))}
+                  style={{ textAlign: "center", padding: "16px 12px" }}>
+                  <span style={{ fontSize: 26, display: "block", marginBottom: 6 }}>{icon}</span>
+                  <strong style={{ fontFamily: theme.heading, fontSize: 15 }}>{label}</strong>
+                  <span style={{ display: "block", fontSize: 12, color: theme.textMuted, marginTop: 4 }}>{desc}</span>
+                </OptionButton>
+              ))}
+            </div>
+            <NavButtons {...nav} onBack={() => setSetupStep(3)} onNext={() => setSetupStep(5)} canNext={!!config.storyLength} />
+          </SetupCard>
+        );
       case "rules":
         return (
           <SetupCard theme={theme} active isRTL={isRTL} title={t("gameRules")} subtitle={t("gameRulesSub")}>
@@ -419,7 +669,26 @@ Provide 2-5 meaningfully different choices.`;
                 </OptionButton>
               </div>
             </div>
-            <NavButtons {...nav} onBack={() => setSetupStep(3)} onNext={() => setSetupStep(5)} canNext={config.deathPossible !== null && config.trackStats !== null} />
+            <NavButtons {...nav} onBack={() => setSetupStep(4)} onNext={() => setSetupStep(6)} canNext={config.deathPossible !== null && config.trackStats !== null} />
+          </SetupCard>
+        );
+      case "perspective":
+        return (
+          <SetupCard theme={theme} active isRTL={isRTL} title={t("perspective")} subtitle={t("perspectiveSub")}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {[
+                { value: "second", labelKey: "secondPerson", exKey: "secondPersonEx", icon: "👤" },
+                { value: "first",  labelKey: "firstPerson",  exKey: "firstPersonEx",  icon: "🗣️" },
+              ].map(({ value, labelKey, exKey, icon }) => (
+                <OptionButton key={value} theme={theme} selected={config.perspective === value}
+                  onClick={() => setConfig(c => ({ ...c, perspective: value }))}
+                  style={{ textAlign: isRTL ? "right" : "left", padding: "14px 18px" }}>
+                  <div style={{ fontWeight: 700, marginBottom: 4 }}>{icon} {t(labelKey)}</div>
+                  <div style={{ fontSize: 13, opacity: 0.7, fontStyle: "italic" }}>{t(exKey)}</div>
+                </OptionButton>
+              ))}
+            </div>
+            <NavButtons {...nav} onBack={() => setSetupStep(5)} onNext={() => setSetupStep(7)} canNext={!!config.perspective} />
           </SetupCard>
         );
       case "prompt":
@@ -428,7 +697,7 @@ Provide 2-5 meaningfully different choices.`;
             <textarea value={config.storyPrompt} onChange={e => setConfig(c => ({ ...c, storyPrompt: e.target.value }))}
               placeholder={t("storySeedPH")}
               style={{ ...inputStyle(theme), minHeight: 120, resize: "vertical", direction: isRTL ? "rtl" : "ltr" }} />
-            <NavButtons {...nav} onBack={() => setSetupStep(4)} onNext={() => setSetupStep(6)} canNext />
+            <NavButtons {...nav} onBack={() => setSetupStep(6)} onNext={() => setSetupStep(8)} canNext />
           </SetupCard>
         );
       case "character": {
@@ -479,7 +748,7 @@ Provide 2-5 meaningfully different choices.`;
                 </div>
               </div>
             </div>
-            <NavButtons {...nav} onBack={() => setSetupStep(5)} onNext={startAdventure}
+            <NavButtons {...nav} onBack={() => setSetupStep(7)} onNext={startAdventure}
               canNext={character.name.trim().length > 0 && character.skills.length > 0} nextLabel={t("beginAdventure")} />
           </SetupCard>
         );
@@ -497,11 +766,32 @@ Provide 2-5 meaningfully different choices.`;
           borderRadius: 16, padding: "24px 28px", flex: 1, overflowY: "auto", maxHeight: "70vh",
           boxShadow: "0 10px 40px rgba(0,0,0,0.3)", textAlign: isRTL ? "right" : "left",
         }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, borderBottom: `1px solid ${theme.border}`, paddingBottom: 12 }}>
+          <div style={{ marginBottom: 20, borderBottom: `1px solid ${theme.border}`, paddingBottom: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h1 style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 18, margin: 0 }}>
               {theme.icon} {character.name}{t("sAdventure")}
             </h1>
-            <span style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 12 }}>{t("turn")} {turnCount}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <button onClick={handleSaveGame} title={t("saveGame")} style={{
+                background: "transparent", border: `1px solid ${theme.border}`, borderRadius: 6,
+                padding: "4px 10px", color: theme.textMuted, fontFamily: theme.heading, fontSize: 11,
+                cursor: "pointer", letterSpacing: 0.5, transition: "all 0.2s",
+              }} onMouseOver={e => { e.target.style.borderColor = theme.primary; e.target.style.color = theme.primary; }}
+                 onMouseOut={e =>  { e.target.style.borderColor = theme.border;  e.target.style.color = theme.textMuted; }}>
+                💾 {t("saveGame")}
+              </button>
+              <button onClick={handleExport} title={t("exportStory")} style={{
+                background: "transparent", border: `1px solid ${theme.border}`, borderRadius: 6,
+                padding: "4px 10px", color: theme.textMuted, fontFamily: theme.heading, fontSize: 11,
+                cursor: "pointer", letterSpacing: 0.5, transition: "all 0.2s",
+              }} onMouseOver={e => { e.target.style.borderColor = theme.primary; e.target.style.color = theme.primary; }}
+                 onMouseOut={e =>  { e.target.style.borderColor = theme.border;  e.target.style.color = theme.textMuted; }}>
+                📄 {t("exportStory")}
+              </button>
+              <span style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 12 }}>{t("turn")} {turnCount}</span>
+            </div>
+            </div>
+            <GenreIconStrip theme={theme} />
           </div>
 
           {storyLog.map((entry, i) => (
@@ -531,11 +821,17 @@ Provide 2-5 meaningfully different choices.`;
 
           {gameOver && (
             <div style={{ textAlign: "center", padding: 30, marginTop: 16, background: `${theme.accent}15`, border: `1px solid ${theme.accent}40`, borderRadius: 12 }}>
-              <p style={{ fontFamily: theme.heading, color: theme.accent, fontSize: 20, margin: "0 0 16px" }}>{t("adventureOver")}</p>
-              <button onClick={resetGame} style={{
-                background: theme.primary, border: "none", borderRadius: 8, padding: "10px 24px",
-                color: theme.bg, fontFamily: theme.heading, fontSize: 14, cursor: "pointer", fontWeight: 700,
-              }}>{t("newAdventure")}</button>
+              <p style={{ fontFamily: theme.heading, color: theme.accent, fontSize: 20, margin: "0 0 20px" }}>{t("adventureOver")}</p>
+              <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+                <button onClick={resetGame} style={{
+                  background: theme.primary, border: "none", borderRadius: 8, padding: "10px 24px",
+                  color: theme.bg, fontFamily: theme.heading, fontSize: 14, cursor: "pointer", fontWeight: 700,
+                }}>{t("newAdventure")}</button>
+                <button onClick={handleExport} style={{
+                  background: "transparent", border: `1px solid ${theme.primary}`, borderRadius: 8, padding: "10px 24px",
+                  color: theme.primary, fontFamily: theme.heading, fontSize: 14, cursor: "pointer", fontWeight: 700,
+                }}>📄 {t("exportStory")}</button>
+              </div>
             </div>
           )}
           <div ref={storyEndRef} />
@@ -638,12 +934,17 @@ Provide 2-5 meaningfully different choices.`;
                 <h1 style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 32, margin: "0 0 8px", letterSpacing: 2, textShadow: `0 0 40px ${theme.primary}30` }}>
                   {theme.icon} {t("adventureAwaits")}
                 </h1>
+                {config.genre && <GenreIconStrip theme={theme} />}
                 <p style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 14, margin: 0 }}>
                   {t("stepOf", { c: String(setupStep + 1), t: String(SETUP_STEPS.length) })}
                 </p>
                 <div style={{ width: "100%", height: 3, background: `${theme.border}55`, borderRadius: 2, marginTop: 16, overflow: "hidden" }}>
                   <div style={{ width: `${progress}%`, height: "100%", background: theme.primary, borderRadius: 2, transition: "width 0.4s ease", boxShadow: `0 0 10px ${theme.primary}60` }} />
                 </div>
+                <button onClick={handleLoadGame} style={{
+                  background: "transparent", border: "none", color: theme.textMuted, fontFamily: theme.body,
+                  fontSize: 13, cursor: "pointer", marginTop: 10, textDecoration: "underline", padding: 0,
+                }}>💾 {t("loadGameSub")}</button>
               </div>
               {renderSetupStep()}
             </div>
@@ -651,6 +952,7 @@ Provide 2-5 meaningfully different choices.`;
           {phase === "game" && renderGame()}
         </div>
       </div>
+      <input ref={fileInputRef} type="file" accept=".json" style={{ display: "none" }} onChange={handleFileChange} />
     </>
   );
 }
