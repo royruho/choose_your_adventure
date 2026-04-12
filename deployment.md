@@ -3,7 +3,9 @@
 This guide covers two ways to run the app:
 
 1. **Local** — everything runs on your Windows PC inside Docker (great for development and testing)
-2. **Cloud** — frontend on Vercel, backend on Render, database on Aiven, AI on Google Gemini
+2. **Cloud** — frontend on Vercel, backend on Render, database on Aiven, AI on Groq
+
+> **Rate limits**: The backend automatically retries on LLM rate-limit errors (HTTP 429), sleeping the exact wait time specified in the error response before retrying — up to 2 retries per request. If all retries fail the player sees a friendly "please wait and try again" message. `LLM_MAX_TOKENS=800` keeps each response within Groq's free-tier TPM budget.
 
 ---
 
@@ -57,7 +59,7 @@ LLM_MODEL=llama-3.3-70b-versatile
 # LLM_API_KEY=sk-ant-...
 # LLM_MODEL=claude-sonnet-4-20250514
 
-LLM_MAX_TOKENS=1000
+LLM_MAX_TOKENS=800
 
 # Make up any random string — used to sign login tokens
 SECRET_KEY=some-long-random-string-change-this
@@ -276,7 +278,7 @@ git push
    | `LLM_API_KEY` | Your Groq API key (`gsk_...`) |
    | `LLM_ENDPOINT` | `https://api.groq.com/openai/v1/chat/completions` |
    | `LLM_MODEL` | `llama-3.3-70b-versatile` |
-   | `LLM_MAX_TOKENS` | `1000` |
+   | `LLM_MAX_TOKENS` | `800` |
    | `SECRET_KEY` | Any long random string (e.g. generate one at [randomkeygen.com](https://randomkeygen.com)) |
    | `CORS_ORIGINS` | `https://your-app.vercel.app` (you'll update this after Vercel deploy) |
 
@@ -381,7 +383,7 @@ Both services watch your `main` branch and redeploy automatically on every push.
 | `LLM_ENDPOINT` | URL of the LLM API | `https://api.groq.com/openai/v1/chat/completions` |
 | `LLM_API_KEY` | Your API key | `gsk_...` (Groq) or `AIza...` (Gemini) |
 | `LLM_MODEL` | Model name | `llama-3.3-70b-versatile` |
-| `LLM_MAX_TOKENS` | Max tokens per response | `1000` |
+| `LLM_MAX_TOKENS` | Max output tokens per call | `800` |
 | `SECRET_KEY` | JWT signing secret | Any long random string |
 | `CORS_ORIGINS` | Comma-separated allowed origins | `http://localhost:5173` |
 

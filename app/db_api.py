@@ -1,5 +1,7 @@
 import os
+import re
 import json
+import asyncio
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
@@ -68,7 +70,7 @@ _llm_config: dict = {
     "endpoint":   os.getenv("LLM_ENDPOINT", "https://api.anthropic.com/v1/messages"),
     "api_key":    os.getenv("LLM_API_KEY", ""),
     "model":      os.getenv("LLM_MODEL", "claude-sonnet-4-20250514"),
-    "max_tokens": int(os.getenv("LLM_MAX_TOKENS", "1000")),
+    "max_tokens": int(os.getenv("LLM_MAX_TOKENS", "800")),
 }
 
 
@@ -106,6 +108,16 @@ def _is_anthropic(endpoint: str) -> bool:
     return "anthropic.com" in endpoint
 
 
+def _parse_retry_after(response: httpx.Response) -> float:
+    """Extract wait-seconds from a 429 response body. Falls back to 6s."""
+    try:
+        msg = response.json().get("error", {}).get("message", "")
+        m = re.search(r"try again in (\d+\.?\d*)s", msg)
+        return float(m.group(1)) + 1.0 if m else 6.0
+    except Exception:
+        return 6.0
+
+
 class ChatRequest(BaseModel):
     system: str
     messages: list
@@ -113,6 +125,8 @@ class ChatRequest(BaseModel):
     story_id: Optional[int] = None
     turn_number: Optional[int] = None
     user_content: Optional[str] = None  # player's action text (for saving)
+    # allow background/utility calls to use a smaller token budget
+    max_tokens_override: Optional[int] = None
 
 
 @router.post("/llm/chat")
@@ -120,56 +134,72 @@ async def llm_chat(req: ChatRequest, db: Session = Depends(get_db), current_user
     endpoint   = _llm_config["endpoint"]
     api_key    = _llm_config["api_key"]
     model      = _llm_config["model"]
-    max_tokens = _llm_config["max_tokens"]
+    max_tokens = req.max_tokens_override or _llm_config["max_tokens"]
 
     if not api_key:
         raise HTTPException(status_code=503, detail="LLM API key not configured on server")
 
+    raw_text = None
+    MAX_RETRIES = 2
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:
-            if _is_anthropic(endpoint):
-                response = await client.post(
-                    endpoint,
-                    headers={
-                        "Content-Type": "application/json",
-                        "x-api-key": api_key,
-                        "anthropic-version": "2023-06-01",
-                    },
-                    json={
+            for attempt in range(MAX_RETRIES + 1):
+                if _is_anthropic(endpoint):
+                    response = await client.post(
+                        endpoint,
+                        headers={
+                            "Content-Type": "application/json",
+                            "x-api-key": api_key,
+                            "anthropic-version": "2023-06-01",
+                        },
+                        json={
+                            "model": model,
+                            "max_tokens": max_tokens,
+                            "system": req.system,
+                            "messages": req.messages,
+                        },
+                    )
+                else:
+                    # OpenAI-compatible (Groq, Gemini, etc.)
+                    openai_messages = [{"role": "system", "content": req.system}] + req.messages
+                    body = {
                         "model": model,
-                        "max_tokens": max_tokens,
-                        "system": req.system,
-                        "messages": req.messages,
-                    },
-                )
-                response.raise_for_status()
-                data = response.json()
-                raw_text = "".join(b.get("text", "") for b in data.get("content", []))
-            else:
-                # OpenAI-compatible (Groq, Gemini, etc.)
-                openai_messages = [{"role": "system", "content": req.system}] + req.messages
-                # Gemini uses max_completion_tokens; most others accept max_tokens.
-                # Send both so either provider picks up the right field.
-                body = {
-                    "model": model,
-                    "max_completion_tokens": max_tokens,
-                    "messages": openai_messages,
-                    # Force pure JSON output — required for reliable game parsing.
-                    # Both Gemini and Groq support this; OpenRouter passes it through.
-                    "response_format": {"type": "json_object"},
-                }
-                response = await client.post(
-                    endpoint,
-                    headers={
-                        "Content-Type": "application/json",
-                        "Authorization": f"Bearer {api_key}",
-                    },
-                    json=body,
-                )
-                response.raise_for_status()
-                data = response.json()
-                raw_text = data["choices"][0]["message"]["content"]
+                        "max_completion_tokens": max_tokens,
+                        "messages": openai_messages,
+                        "response_format": {"type": "json_object"},
+                    }
+                    response = await client.post(
+                        endpoint,
+                        headers={
+                            "Content-Type": "application/json",
+                            "Authorization": f"Bearer {api_key}",
+                        },
+                        json=body,
+                    )
 
+                # Retry on rate limit
+                if response.status_code == 429:
+                    if attempt < MAX_RETRIES:
+                        wait = _parse_retry_after(response)
+                        await asyncio.sleep(wait)
+                        continue
+                    raise HTTPException(
+                        status_code=429,
+                        detail=f"LLM rate limit reached — please wait a moment and try again.",
+                    )
+
+                response.raise_for_status()
+
+                if _is_anthropic(endpoint):
+                    data = response.json()
+                    raw_text = "".join(b.get("text", "") for b in data.get("content", []))
+                else:
+                    data = response.json()
+                    raw_text = data["choices"][0]["message"]["content"]
+                break  # success
+
+    except HTTPException:
+        raise
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=502, detail=f"LLM error: {e.response.text}")
     except httpx.RequestError as e:

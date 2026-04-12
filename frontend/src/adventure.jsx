@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { api } from "./api.js";
 
-// ─── TRANSLATIONS (English + Hebrew) ───────────────────────────
+// ─── TRANSLATIONS ───────────────────────────────────────────────
 const TR = {
   adventureAwaits:  { English: "Adventure Awaits", Hebrew: "הרפתקה מחכה" },
   stepOf:           { English: "Step {c} of {t}", Hebrew: "שלב {c} מתוך {t}" },
@@ -83,6 +83,19 @@ const TR = {
   scifi:            { English: "Sci-Fi", Hebrew: "מדע בדיוני" },
   reality:          { English: "Reality", Hebrew: "מציאות" },
   mystery:          { English: "Mystery", Hebrew: "מסתורין" },
+  // ── Dice & chapters ──
+  chapterLabel:     { English: "Chapter", Hebrew: "פרק" },
+  of:               { English: "of", Hebrew: "מתוך" },
+  fateCheck:        { English: "Fate check required:", Hebrew: "נדרשת בדיקת גורל:" },
+  rollBtn:          { English: "Roll the Dice!", Hebrew: "הטל קוביה!" },
+  rollingAnim:      { English: "Rolling...", Hebrew: "מטיל..." },
+  continueAfterRoll:{ English: "Continue →", Hebrew: "← המשך" },
+  critFail:         { English: "Critical Failure", Hebrew: "כישלון חרוץ" },
+  minorFail:        { English: "Setback", Hebrew: "מכשול" },
+  partSuccess:      { English: "Partial Success", Hebrew: "הצלחה חלקית" },
+  critSuccess:      { English: "Critical Success!", Hebrew: "הצלחה מוחלטת!" },
+  skillBonusApplied:{ English: "Skill Bonus — rolled twice, kept highest", Hebrew: "בונוס כישור — הוטל פעמיים, נשמר הגבוה" },
+  rollRequired:     { English: "Next action may require a fate check", Hebrew: "הפעולה הבאה עשויה לדרוש בדיקת גורל" },
 };
 
 // ─── THEMES ────────────────────────────────────────────────────
@@ -125,22 +138,29 @@ const GENRE_SKILLS = {
 };
 
 const LANGUAGES = [
-  { code: "English", label: "English" }, { code: "Spanish", label: "Español" },
-  { code: "French", label: "Français" }, { code: "German", label: "Deutsch" },
-  { code: "Italian", label: "Italiano" }, { code: "Portuguese", label: "Português" },
-  { code: "Hebrew", label: "עברית" }, { code: "Arabic", label: "العربية" },
-  { code: "Chinese", label: "中文" }, { code: "Japanese", label: "日本語" },
-  { code: "Korean", label: "한국어" }, { code: "Russian", label: "Русский" },
-  { code: "Hindi", label: "हिन्दी" }, { code: "Dutch", label: "Nederlands" },
-  { code: "Swedish", label: "Svenska" }, { code: "Polish", label: "Polski" },
-  { code: "Turkish", label: "Türkçe" },
+  { code: "English", label: "English" },
+  { code: "Hebrew",  label: "עברית" },
+  { code: "Arabic",  label: "العربية" },
 ];
 
 const FONTS_URL = "https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Orbitron:wght@400;700;900&family=Fira+Code:wght@400;500&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap";
-const SETUP_STEPS = ["language", "genre", "age", "length", "duration", "rules", "perspective", "prompt", "character"];
-const SUMMARY_EVERY = 5;   // run summarization every N turns
-const WINDOW_SIZE   = 12;  // storyLog entries (≈6 turns) sent to LLM when summary exists
-const RTL_LANGS = ["Hebrew", "Arabic"];
+const SETUP_STEPS   = ["language", "genre", "age", "length", "duration", "rules", "perspective", "prompt", "character"];
+const SUMMARY_EVERY = 5;
+const WINDOW_SIZE   = 12;
+const RTL_LANGS     = ["Hebrew", "Arabic"];
+// Chapter count per adventure length (goal-based, not turn-based)
+const CHAPTER_MAP   = { 5: 1, 10: 2, 20: 4, 40: 8 };
+
+// Dice outcome table
+const DICE_OUTCOMES = [
+  null,
+  { labelKey: "critFail",    color: "#FF2040", bg: "rgba(255,32,64,0.12)",    narrative: "something goes badly wrong — a real setback with consequences" },
+  { labelKey: "minorFail",   color: "#FF8C00", bg: "rgba(255,140,0,0.12)",   narrative: "the attempt fails with a complication" },
+  { labelKey: "minorFail",   color: "#FF8C00", bg: "rgba(255,140,0,0.12)",   narrative: "the attempt fails with a complication" },
+  { labelKey: "partSuccess", color: "#4DB6AC", bg: "rgba(77,182,172,0.12)",  narrative: "partial success — it works but with a cost or catch" },
+  { labelKey: "partSuccess", color: "#4DB6AC", bg: "rgba(77,182,172,0.12)",  narrative: "partial success — it works but with a cost or catch" },
+  { labelKey: "critSuccess", color: "#66BB6A", bg: "rgba(102,187,106,0.12)", narrative: "exceptional success, better than expected" },
+];
 
 // ─── SHARED COMPONENTS ─────────────────────────────────────────
 function FloatingParticles({ theme }) {
@@ -163,16 +183,137 @@ function GenreIconStrip({ theme }) {
     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 14, margin: "10px 0" }}>
       {theme.icons.map((ic, i) => (
         <span key={i} style={{
-          fontSize: i === 0 ? 22 : 16,
-          opacity: i === 0 ? 0.7 : 0.35,
-          filter: "drop-shadow(0 0 6px currentColor)",
-          transition: "all 0.4s ease",
+          fontSize: i === 0 ? 22 : 16, opacity: i === 0 ? 0.7 : 0.35,
+          filter: "drop-shadow(0 0 6px currentColor)", transition: "all 0.4s ease",
         }}>{ic}</span>
       ))}
     </div>
   );
 }
 
+// ─── DICE ROLLER OVERLAY ────────────────────────────────────────
+function DiceRoller({ theme, context, characterSkills, onResult, isRTL, t }) {
+  const DICE_FACES = ["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+  const [rolling, setRolling]       = useState(false);
+  const [displayVal, setDisplayVal] = useState(null);
+  const [finalVal, setFinalVal]     = useState(null);
+  const [skillBonus, setSkillBonus] = useState(false);
+
+  const checkSkillRelevance = () => {
+    if (!characterSkills?.length || !context) return false;
+    const ctx = context.toLowerCase();
+    return characterSkills.some(skill => {
+      const s = skill.toLowerCase();
+      if (ctx.includes(s)) return true;
+      return s.split(/\s+/).some(w => w.length > 3 && ctx.includes(w));
+    });
+  };
+
+  const handleRoll = () => {
+    setRolling(true);
+    setFinalVal(null);
+    const hasBonus = checkSkillRelevance();
+    setSkillBonus(hasBonus);
+    let count = 0;
+    const iv = setInterval(() => {
+      setDisplayVal(Math.ceil(Math.random() * 6));
+      count++;
+      if (count >= 20) {
+        clearInterval(iv);
+        const r1 = Math.ceil(Math.random() * 6);
+        const r2 = hasBonus ? Math.ceil(Math.random() * 6) : r1;
+        const final = Math.max(r1, r2);
+        setDisplayVal(final);
+        setFinalVal(final);
+        setRolling(false);
+      }
+    }, 75);
+  };
+
+  const outcome = finalVal ? DICE_OUTCOMES[finalVal] : null;
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.78)",
+      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+      backdropFilter: "blur(8px)", direction: isRTL ? "rtl" : "ltr",
+    }}>
+      <div style={{
+        background: theme.bgCard, border: `1px solid ${outcome ? outcome.color : theme.border}`,
+        borderRadius: 20, padding: "36px 44px", maxWidth: 420, width: "90%",
+        textAlign: "center", boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+        transition: "border-color 0.5s ease",
+      }}>
+        <div style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, marginBottom: 10 }}>
+          {t("fateCheck")}
+        </div>
+        <div style={{ fontFamily: theme.heading, color: theme.text, fontSize: 16, marginBottom: 28, lineHeight: 1.4, fontStyle: "italic" }}>
+          "{context}"
+        </div>
+
+        {/* Dice face */}
+        <div style={{
+          fontSize: 100, lineHeight: 1, margin: "0 0 20px",
+          color: outcome ? outcome.color : theme.primary,
+          transition: "color 0.5s ease",
+          animation: rolling ? "diceRoll 0.12s ease-in-out infinite" : "none",
+          filter: rolling ? "blur(2px)" : "none",
+        }}>
+          {displayVal ? DICE_FACES[displayVal] : "🎲"}
+        </div>
+
+        {/* Outcome label */}
+        {outcome && (
+          <div style={{
+            background: outcome.bg, border: `1px solid ${outcome.color}50`,
+            borderRadius: 10, padding: "10px 24px", marginBottom: 12,
+            animation: "fadeIn 0.4s ease",
+          }}>
+            <div style={{ fontFamily: theme.heading, color: outcome.color, fontSize: 18, letterSpacing: 1.5, fontWeight: 700 }}>
+              {t(outcome.labelKey)}
+            </div>
+            <div style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 12, marginTop: 4 }}>
+              {displayVal} / 6
+            </div>
+          </div>
+        )}
+
+        {skillBonus && finalVal && (
+          <div style={{ fontFamily: theme.body, color: theme.secondary || "#4DB6AC", fontSize: 12, marginBottom: 14, opacity: 0.9 }}>
+            ✦ {t("skillBonusApplied")}
+          </div>
+        )}
+
+        <div style={{ marginTop: 20 }}>
+          {!finalVal ? (
+            <button onClick={handleRoll} disabled={rolling} style={{
+              background: rolling ? `${theme.border}88` : theme.primary,
+              border: "none", borderRadius: 10, padding: "13px 36px",
+              color: rolling ? theme.textMuted : theme.bg,
+              fontFamily: theme.heading, fontSize: 15, fontWeight: 700,
+              cursor: rolling ? "wait" : "pointer", letterSpacing: 1, transition: "all 0.2s",
+            }}>
+              {rolling ? t("rollingAnim") : t("rollBtn")}
+            </button>
+          ) : (
+            <button
+              onClick={() => onResult({ value: finalVal, outcome: t(outcome.labelKey), narrative: outcome.narrative, skillBonus })}
+              style={{
+                background: outcome.color, border: "none", borderRadius: 10, padding: "13px 36px",
+                color: "#000", fontFamily: theme.heading, fontSize: 15, fontWeight: 700,
+                cursor: "pointer", letterSpacing: 1, transition: "all 0.2s",
+              }}
+            >
+              {t("continueAfterRoll")}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── SETUP COMPONENTS ───────────────────────────────────────────
 function SetupCard({ theme, active, children, title, subtitle, isRTL }) {
   return (
     <div style={{
@@ -183,7 +324,7 @@ function SetupCard({ theme, active, children, title, subtitle, isRTL }) {
       pointerEvents: active ? "auto" : "none", boxShadow: "0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)",
       direction: isRTL ? "rtl" : "ltr", textAlign: isRTL ? "right" : "left",
     }}>
-      {title && <h2 style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 22, margin: "0 0 4px", letterSpacing: 1 }}>{title}</h2>}
+      {title    && <h2 style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 22, margin: "0 0 4px", letterSpacing: 1 }}>{title}</h2>}
       {subtitle && <p style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 14, margin: "0 0 24px" }}>{subtitle}</p>}
       {children}
     </div>
@@ -225,33 +366,39 @@ function NavButtons({ theme, onBack, onNext, canNext = true, nextLabel, backLabe
 }
 
 function inputStyle(theme) {
-  return { width: "100%", background: `${theme.bg}88`, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "10px 12px", color: theme.text, fontFamily: theme.body, fontSize: 14, outline: "none", boxSizing: "border-box" };
+  return {
+    width: "100%", background: `${theme.bg}88`, border: `1px solid ${theme.border}`,
+    borderRadius: 8, padding: "10px 12px", color: theme.text, fontFamily: theme.body,
+    fontSize: 14, outline: "none", boxSizing: "border-box",
+  };
 }
 
 // ─── EXPORT / SAVE / LOAD UTILITIES ───────────────────────────
-
-function exportStoryAsText({ storyLog, config, character, stats, turnCount, gameOver }) {
-  const sep = "═".repeat(42);
-  const title = `${character.name}'s ${config.genre ? config.genre.charAt(0).toUpperCase() + config.genre.slice(1) : ""} Adventure`;
+function exportStoryAsText({ storyLog, config, character, stats, turnCount, gameOver, chapterNumber }) {
+  const sep   = "═".repeat(42);
+  const genre = config.genre ? config.genre.charAt(0).toUpperCase() + config.genre.slice(1) : "";
   const lines = [
     sep,
-    `  ${title}`,
+    `  ${character.name}'s ${genre} Adventure`,
     sep,
-    `Character : ${character.name}${character.gender ? ` (${character.gender}` : ""}${character.age ? `, age ${character.age}` : ""}${character.gender ? ")" : ""}`,
-    `Genre     : ${config.genre}  |  Language: ${config.language}`,
-    `Content   : ${config.ageTier}  |  Pacing: ${config.responseLength}`,
+    `Character  : ${character.name}${character.gender ? ` (${character.gender}` : ""}${character.age ? `, age ${character.age}` : ""}${character.gender ? ")" : ""}`,
+    `Genre      : ${config.genre}  |  Language: ${config.language}`,
+    `Content    : ${config.ageTier}  |  Pacing: ${config.responseLength}`,
     `Perspective: ${config.perspective === "first" ? "First person (I)" : "Second person (You)"}`,
     `Death possible: ${config.deathPossible ? "Yes" : "No"}  |  Stats tracked: ${config.trackStats ? "Yes" : "No"}`,
-    character.skills?.length ? `Skills    : ${character.skills.join(", ")}` : "",
-    config.storyPrompt ? `Premise   : ${config.storyPrompt}` : "",
-    `Exported  : ${new Date().toLocaleString()}`,
-    sep,
-    "",
+    character.skills?.length ? `Skills     : ${character.skills.join(", ")}` : "",
+    config.storyPrompt ? `Premise    : ${config.storyPrompt}` : "",
+    `Exported   : ${new Date().toLocaleString()}`,
+    sep, "",
   ].filter(l => l !== null);
 
   let turn = 0;
   storyLog.forEach(entry => {
-    if (entry.role === "narrator") {
+    if (entry.role === "chapter") {
+      lines.push("", `${"─".repeat(42)}`, `  ${entry.text}`, `${"─".repeat(42)}`, "");
+    } else if (entry.role === "roll") {
+      lines.push(`[Fate Check: ${entry.context} — ${entry.value}/6 (${entry.outcome})${entry.skillBonus ? " ★ Skill Bonus" : ""}]`);
+    } else if (entry.role === "narrator") {
       turn++;
       lines.push(`[Turn ${turn} — Narrator]`);
       lines.push(entry.text);
@@ -272,49 +419,63 @@ function exportStoryAsText({ storyLog, config, character, stats, turnCount, game
     if (rels.length) { lines.push("Relations :"); rels.forEach(([k, v]) => lines.push(`  ${k}: ${v}`)); }
     lines.push(sep);
   }
-
   return lines.join("\n");
 }
 
 function triggerDownload(filename, content, mime) {
   const blob = new Blob([content], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
   a.href = url; a.download = filename; a.click();
   URL.revokeObjectURL(url);
 }
 
-function buildSavePayload({ config, character, stats, storyLog, choices, turnCount, gameOver }) {
-  return { version: 1, savedAt: new Date().toISOString(), config, character, stats, storyLog, choices, turnCount, gameOver };
+function buildSavePayload({ config, character, stats, storyLog, choices, turnCount, gameOver, storySummary, chapterNumber, chapterBrief, chapterProgress }) {
+  return {
+    version: 2, savedAt: new Date().toISOString(),
+    config, character, stats, storyLog, choices, turnCount, gameOver,
+    storySummary, chapterNumber, chapterBrief, chapterProgress,
+  };
 }
 
 function loadAndValidateSave(json) {
   const data = JSON.parse(json);
-  if (!data.version || !data.config || !data.character || !Array.isArray(data.storyLog))
+  if (!data.config || !data.character || !Array.isArray(data.storyLog))
     throw new Error("Invalid save file");
   return data;
 }
 
 // ─── MAIN APP ──────────────────────────────────────────────────
 export default function AdventureGame() {
-  const [phase, setPhase] = useState("setup");
-  const [setupStep, setSetupStep] = useState(0);
-  const [config, setConfig] = useState({ genre: "", language: "English", ageTier: "", responseLength: "", storyLength: 15, deathPossible: null, trackStats: null, perspective: "second", storyPrompt: "" });
-  const [character, setCharacter] = useState({ name: "", gender: "", age: "", appearance: "", skills: [] });
-  const [storyLog, setStoryLog] = useState([]);
-  const [stats, setStats] = useState({ health: 100, inventory: [], relationships: {} });
-  const [choices, setChoices] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [phase, setPhase]           = useState("setup");
+  const [setupStep, setSetupStep]   = useState(0);
+  const [config, setConfig]         = useState({ genre: "", language: "English", ageTier: "", responseLength: "", storyLength: 15, deathPossible: null, trackStats: null, perspective: "second", storyPrompt: "" });
+  const [character, setCharacter]   = useState({ name: "", gender: "", age: "", appearance: "", skills: [] });
+  const [storyLog, setStoryLog]     = useState([]);
+  const [stats, setStats]           = useState({ health: 100, inventory: [], relationships: {} });
+  const [choices, setChoices]       = useState([]);
+  const [loading, setLoading]       = useState(false);
   const [customAction, setCustomAction] = useState("");
-  const [turnCount, setTurnCount] = useState(0);
-  const [gameOver, setGameOver] = useState(false);
-  const [storyId, setStoryId] = useState(null);  // DB story ID for persistence
+  const [turnCount, setTurnCount]   = useState(0);
+  const [gameOver, setGameOver]     = useState(false);
+  const [storyId, setStoryId]       = useState(null);
   const [storySummary, setStorySummary] = useState({ narrative: "", world: null });
+  // Chapter system
+  const [chapterNumber, setChapterNumber] = useState(1);
+  const [chapterBrief, setChapterBrief]   = useState(null);
+  const [chapterBanner, setChapterBanner] = useState(null); // string | null — shown as overlay
+  // Dice system
+  const [pendingRoll, setPendingRoll]         = useState(null); // { context, choiceText } | null
+  const [nextRollRequired, setNextRollRequired] = useState({ required: false, context: "" });
+  // Chapter progress — tracks partial goal completion within current chapter
+  const [chapterProgress, setChapterProgress] = useState({ achieved: [], clues: [] });
+
   const storyEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const bannerTimerRef = useRef(null);
 
-  const lang = config.language;
-  const isRTL = RTL_LANGS.includes(lang);
+  const lang    = config.language;
+  const isRTL   = RTL_LANGS.includes(lang);
   const isHebrew = lang === "Hebrew";
   const t = useCallback((key, replacements) => {
     let str = TR[key]?.[lang] || TR[key]?.English || key;
@@ -322,14 +483,14 @@ export default function AdventureGame() {
     return str;
   }, [lang]);
 
-  const theme = THEMES[config.genre] || THEMES.fantasy;
-  const currentStep = SETUP_STEPS[setupStep];
+  const theme        = THEMES[config.genre] || THEMES.fantasy;
+  const currentStep  = SETUP_STEPS[setupStep];
+  const totalChapters = CHAPTER_MAP[config.storyLength] || Math.max(1, Math.round((config.storyLength || 10) / 5));
 
   const getSkillsDisplay = (genre) => isHebrew ? (GENRE_SKILLS[genre]?.he || []) : (GENRE_SKILLS[genre]?.en || []);
   const getSkillEN = (genre, displaySkill) => {
     const g = GENRE_SKILLS[genre];
-    if (!g) return displaySkill;
-    if (!isHebrew) return displaySkill;
+    if (!g || !isHebrew) return displaySkill;
     const idx = g.he.indexOf(displaySkill);
     return idx >= 0 ? g.en[idx] : displaySkill;
   };
@@ -338,51 +499,86 @@ export default function AdventureGame() {
     if (storyEndRef.current) storyEndRef.current.scrollIntoView({ behavior: "smooth" });
   }, [storyLog, choices]);
 
+  // ─── SYSTEM PROMPT ────────────────────────────────────────────
   const buildSystemPrompt = useCallback(() => {
-    const ageRules = { kids: "Content suitable for children 8+. No violence beyond mild conflict. No romance. Simple vocabulary.", teen: "Content for ages 13+. Moderate action OK. Light romantic tension fine.", adult: "Content for 18+. Violence, complex themes, romance, sophisticated vocabulary all acceptable." };
-    const lengthRules = { short: "1-2 sentences per beat.", medium: "One paragraph (3-5 sentences) per beat.", long: "2-3 rich paragraphs per beat. Be descriptive and immersive." };
+    const ageRules = {
+      kids:  "Content suitable for children 8+. No violence beyond mild conflict. No romance. Simple vocabulary.",
+      teen:  "Content for ages 13+. Moderate action OK. Light romantic tension fine.",
+      adult: "Content for 18+. Violence, complex themes, romance, sophisticated vocabulary all acceptable.",
+    };
+    const lengthRules = {
+      short:  "1-2 sentences per beat.",
+      medium: "One paragraph (3-5 sentences) per beat.",
+      long:   "2-3 rich paragraphs per beat. Be descriptive and immersive.",
+    };
     const skillsEN = character.skills.map(s => getSkillEN(config.genre, s));
+
+    const chapterSection = chapterBrief
+      ? `CHAPTER ${chapterNumber}${totalChapters > 1 ? ` of ${totalChapters}` : ""}: "${chapterBrief.title}" — Goal: ${chapterBrief.goal} | Obstacle: ${chapterBrief.obstacle}\n→ Set chapterComplete:true only when this goal is conclusively achieved. Player may explore freely and hit dead ends.`
+      : "";
+
+    const storyContextSection = storySummary.narrative ? `
+STORY CONTEXT (events before recent turns — stay consistent, never contradict):
+${storySummary.narrative}${storySummary.world?.npcs && Object.keys(storySummary.world.npcs).length ? `
+NPCs: ${Object.entries(storySummary.world.npcs).map(([k, v]) => `${k} (${v})`).join(", ")}` : ""}${storySummary.world?.locations?.length ? `
+Locations: ${storySummary.world.locations.join(", ")}` : ""}${storySummary.world?.decisions?.length ? `
+Key decisions: ${storySummary.world.decisions.join("; ")}` : ""}${storySummary.world?.threads?.length ? `
+Active threads: ${storySummary.world.threads.join("; ")}` : ""}` : "";
+
+    const total = config.storyLength || 20;
+    const effectiveTurn = Math.min(turnCount, total);
+    const pct = effectiveTurn / total;
+    const isLastChapter = chapterNumber >= totalChapters;
+    let phaseInstr;
+    if (turnCount === 0)                         phaseInstr = "PHASE — OPENING: Establish the world, character background, and inciting situation.";
+    else if (turnCount >= total && isLastChapter) phaseInstr = "PHASE — FINALE: Deliver a satisfying conclusion. Set gameOver:true once the story reaches a complete resolution.";
+    else if (turnCount >= total - 1 && isLastChapter) phaseInstr = "PHASE — CLIMAX: Bring all threads to a head — resolution is close.";
+    else if (pct < 0.35)                         phaseInstr = "PHASE — EARLY: Develop the world, introduce complications, build toward the central conflict.";
+    else if (pct < 0.65)                         phaseInstr = "PHASE — MIDDLE: Escalate tension, raise stakes, introduce a twist.";
+    else                                         phaseInstr = `PHASE — LATE: Push toward the climax. Consequences mount, ${Math.max(1, total - turnCount)} turn(s) remaining.`;
 
     return `You are the narrator of an interactive ${THEMES[config.genre]?.nameKey || "fantasy"} adventure game.
 
 LANGUAGE: Respond ENTIRELY in ${config.language}. ALL story text and choices must be in ${config.language}.
 
-PERSPECTIVE: ${config.perspective === "first" ? 'Write in FIRST PERSON. The character narrates as themselves — use "I", "my", "me". Example: "I drew my sword and stepped into the dark."' : 'Write in SECOND PERSON. Address the player directly — use "you", "your". Example: "You draw your sword and step into the dark."'}
+PERSPECTIVE: ${config.perspective === "first"
+  ? isHebrew
+    ? 'כתוב בגוף ראשון. השתמש ב"אני", "שלי". דוגמה: "שללתי את חרבי וצעדתי אל החשיכה."'
+    : isRTL
+      ? 'اكتب بضمير المتكلم. استخدم "أنا"، "لي". مثال: "سللت سيفي وخطوت إلى الظلام."'
+      : 'Write in FIRST PERSON. Use "I", "my", "me". Example: "I drew my sword and stepped into the dark."'
+  : isHebrew
+    ? 'כתוב בגוף שני. השתמש ב"אתה", "שלך". דוגמה: "אתה שולף את חרבך וצועד אל החשיכה."'
+    : isRTL
+      ? 'اكتب بضمير المخاطب. استخدم "أنت"، "لك". مثال: "تسلّ سيفك وتخطو نحو الظلام."'
+      : 'Write in SECOND PERSON. Use "you", "your". Example: "You draw your sword and step into the dark."'}
 
-CHARACTER: Name: ${character.name || "The Adventurer"}, Gender: ${character.gender || "unspecified"}, Age: ${character.age || "unknown"}, Appearance: ${character.appearance || "unspecified"}, Skills: ${skillsEN.join(", ") || "none"}
+CHARACTER: Name: ${character.name || "The Adventurer"}, Gender: ${character.gender || "unspecified"}, Age: ${character.age || "unknown"}, Appearance: ${(character.appearance || "unspecified").replace(/\n+/g, ", ")}, Skills: ${skillsEN.join(", ") || "none"}
 
 CONTENT: ${ageRules[config.ageTier] || ageRules.teen}
 LENGTH: ${lengthRules[config.responseLength] || lengthRules.medium}
 ${config.deathPossible ? "DEATH IS POSSIBLE if very poor choices are made." : "DEATH IS NOT POSSIBLE. Failures redirect the story."}
-${config.trackStats ? 'TRACK STATS: Include "stats" object with health (0-100), inventory array, relationships object.' : ""}
-SKILLS: When situations relate to character skills, mention the skill and give favorable outcomes.
+${config.trackStats
+  ? `TRACK STATS: Always return a "stats" object with the updated values. Current authoritative state — health: ${stats.health}/100, inventory: [${(stats.inventory || []).join(", ") || "empty"}], relationships: {${Object.entries(stats.relationships || {}).map(([k,v]) => `${k}: ${v}`).join(", ") || "none"}}. Carry these forward and modify based on events. Reduce health on dangerous failures.`
+  : ""}
+SKILLS: When situations relate to character skills, acknowledge the skill and give more favorable outcomes.
 ${config.storyPrompt ? `PREMISE: ${config.storyPrompt}` : "Create an original compelling opening."}
-${storySummary.narrative ? `
-STORY CONTEXT (events before the recent turns — stay consistent, never contradict these):
-${storySummary.narrative}${storySummary.world?.npcs && Object.keys(storySummary.world.npcs).length ? `
-NPCs: ${Object.entries(storySummary.world.npcs).map(([k, v]) => `${k} (${v})`).join(", ")}` : ""}${storySummary.world?.locations?.length ? `
-Locations visited: ${storySummary.world.locations.join(", ")}` : ""}${storySummary.world?.decisions?.length ? `
-Key decisions made: ${storySummary.world.decisions.join("; ")}` : ""}${storySummary.world?.threads?.length ? `
-Active plot threads: ${storySummary.world.threads.join("; ")}` : ""}` : ""}
+${storyContextSection}
+${chapterSection}
 
-STORY ARC: This adventure is planned for exactly ${config.storyLength} turns. Current turn: ${turnCount}.
-${(() => {
-  const total = config.storyLength;
-  const pct = turnCount / total;
-  if (turnCount === 0)           return "PHASE — OPENING: Establish the world, character background, and the inciting situation.";
-  if (turnCount >= total)        return `PHASE — FINALE (turn ${turnCount}/${total}): This is the LAST turn. Deliver a satisfying conclusion to all story threads. Set gameOver to true.`;
-  if (turnCount >= total - 1)    return `PHASE — CLIMAX (turn ${turnCount}/${total}): The story ends next turn. Bring all threads to a head. Make the final choice feel decisive.`;
-  if (pct < 0.35)                return `PHASE — EARLY (turn ${turnCount}/${total}): Develop the world, introduce complications, build toward the central conflict.`;
-  if (pct < 0.65)                return `PHASE — MIDDLE (turn ${turnCount}/${total}): Escalate tension, raise stakes, deepen the conflict. Introduce a twist or reversal.`;
-  return                                `PHASE — LATE (turn ${turnCount}/${total}): Push toward the climax. Consequences mount, resolution is ${total - turnCount} turn(s) away.`;
-})()}
+STORY ARC: ${phaseInstr}
 
 RESPOND WITH VALID JSON ONLY (no markdown fences):
-{"story":"...","choices":["...","...","..."],${config.trackStats ? '"stats":{"health":100,"inventory":[],"relationships":{}},' : ''}"gameOver":false,"gameOverReason":""}
-Provide 2-5 meaningfully different choices.`;
-  }, [config, character, isHebrew, turnCount, storySummary]);
+{"story":"...","choices":["...","...","..."],${config.trackStats ? '"stats":{"health":100,"inventory":[],"relationships":{}},' : ''}"gameOver":false,"gameOverReason":"","rollRequired":false,"rollContext":"","chapterComplete":false,"chapterProgress":{"achieved":[],"clues":[]}}
 
-  // ─── BACKEND CALL ──────────────────────────────────────────────
+rollRequired: true when next action has meaningful risk (combat, stealth, locks, persuasion). False for safe/narrative choices.
+rollContext: Short phrase shown to player before rolling (e.g. "pick the ancient lock").
+chapterComplete: true ONLY when the single chapter goal is conclusively achieved.
+chapterProgress: Update every turn — achieved: specific milestones completed toward the one chapter goal (cumulative, carry forward); clues: hints/info the player has discovered that help reach the goal (cumulative).
+Provide 2-5 meaningfully different choices.`;
+  }, [config, character, isHebrew, isRTL, turnCount, storySummary, chapterBrief, chapterNumber, totalChapters, stats]);
+
+  // ─── API CALL ─────────────────────────────────────────────────
   const callAPI = useCallback(async (messages, persistOpts = {}) => {
     try {
       return await api.chat(buildSystemPrompt(), messages, persistOpts);
@@ -391,117 +587,270 @@ Provide 2-5 meaningfully different choices.`;
       return {
         story: isHebrew ? "משהו השתבש... נסה שוב." : "Something went wrong... try again.",
         choices: [isHebrew ? "נסה שוב" : "Try again"],
-        gameOver: false,
+        gameOver: false, rollRequired: false, rollContext: "", chapterComplete: false,
       };
     }
   }, [buildSystemPrompt, isHebrew]);
 
   // ─── BACKGROUND SUMMARIZER ─────────────────────────────────────
   const triggerSummarize = useCallback(async (fullLog, currentSummary) => {
-    const SUMMARIZE_SYSTEM =
-      `You track story continuity for an interactive adventure game. ` +
-      `Analyze the story and produce a compact JSON summary of all important facts. ` +
-      `RESPOND WITH VALID JSON ONLY (no markdown fences):\n` +
-      `{"narrative":"2-3 sentences covering key events and current situation","world":{"npcs":{"CharacterName":"relationship/status"},"locations":["place — notes"],"decisions":["decision made"],"threads":["active plot thread"]}}`;
+    const SYSTEM =
+      `You track story continuity for an interactive adventure game. Produce a compact JSON summary. ` +
+      `RESPOND WITH VALID JSON ONLY:\n` +
+      `{"narrative":"2-3 sentences covering key events and current situation","world":{"npcs":{"Name":"relationship/status"},"locations":["place — notes"],"decisions":["decision made"],"threads":["active plot thread"]}}`;
 
     const parts = [];
     if (currentSummary.narrative) {
       parts.push(`PREVIOUS SUMMARY: ${currentSummary.narrative}`);
       if (currentSummary.world) parts.push(`WORLD STATE: ${JSON.stringify(currentSummary.world)}`);
       parts.push("NEW EVENTS TO INCORPORATE:");
-      fullLog.slice(-(SUMMARY_EVERY * 2)).forEach(e =>
-        parts.push(e.role === "narrator" ? `Narrator: ${e.text}` : `Player: ${e.text}`)
-      );
+      fullLog.slice(-(SUMMARY_EVERY * 2)).forEach(e => {
+        if (e.role === "narrator") parts.push(`Narrator: ${e.text}`);
+        else if (e.role === "player") parts.push(`Player: ${e.text}`);
+      });
     } else {
-      fullLog.forEach(e =>
-        parts.push(e.role === "narrator" ? `Narrator: ${e.text}` : `Player: ${e.text}`)
-      );
+      fullLog.forEach(e => {
+        if (e.role === "narrator") parts.push(`Narrator: ${e.text}`);
+        else if (e.role === "player") parts.push(`Player: ${e.text}`);
+      });
     }
 
     try {
-      const result = await api.chat(SUMMARIZE_SYSTEM, [{ role: "user", content: parts.join("\n\n") }]);
+      const result = await api.chat(SYSTEM, [{ role: "user", content: parts.join("\n\n") }], { max_tokens_override: 350 });
       if (result?.narrative) setStorySummary(result);
     } catch (e) {
-      console.warn("Story summarization failed (non-critical):", e);
+      console.warn("Summarization failed (non-critical):", e);
     }
   }, []);
 
+  // ─── CHAPTER BRIEF GENERATOR ──────────────────────────────────
+  const generateChapterBrief = useCallback(async (chNum, total, summaryContext) => {
+    const SYSTEM =
+      `You are a story architect for an interactive ${THEMES[config.genre]?.nameKey || "fantasy"} adventure. ` +
+      `Design a short chapter brief. The player explores freely and may hit dead ends. ` +
+      `RESPOND WITH VALID JSON ONLY — three fields, nothing else:\n` +
+      `{"title":"evocative chapter title (3-6 words)","goal":"ONE overarching objective — describe what to achieve, not specific items or steps (e.g. 'Prove your worth to the wizard scout', NOT 'Collect herb A, herb B, and herb C')","obstacle":"the main force or challenge blocking the goal (one sentence)"}`;
+
+    const parts = [
+      `Chapter ${chNum} of ${total} in a ${THEMES[config.genre]?.nameKey || "fantasy"} adventure.`,
+      `Character: ${character.name}${character.skills.length ? `, skilled in ${character.skills.join(", ")}` : ""}.`,
+      config.storyPrompt ? `Premise: ${config.storyPrompt}` : "",
+      summaryContext ? `Story so far: ${summaryContext}` : "This is the very beginning of the adventure.",
+      `Design chapter ${chNum} of ${total}. ${chNum === 1 ? "This is the opening chapter — establish the world and first conflict." : chNum === total ? "This is the final chapter — converge all threads for a satisfying conclusion." : "Build on events so far, escalate stakes."}`,
+    ].filter(Boolean);
+
+    try {
+      const result = await api.chat(SYSTEM, [{ role: "user", content: parts.join("\n") }], { max_tokens_override: 300 });
+      if (result?.title && result?.goal && result?.obstacle) {
+        setChapterBrief(result);
+        setChapterNumber(chNum);
+        // Show banner
+        if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
+        setChapterBanner(`${chNum === 1 ? "" : ""}${result.title}`);
+        bannerTimerRef.current = setTimeout(() => setChapterBanner(null), 5000);
+      }
+    } catch (e) {
+      console.warn("Chapter brief generation failed (non-critical):", e);
+    }
+  }, [config, character]);
+
+  // ─── START ADVENTURE ──────────────────────────────────────────
   const startAdventure = async () => {
     setPhase("game");
     setLoading(true);
 
-    // Attempt to create a story in the DB (only works if user is logged in)
+    // Generate chapter 1 brief after a short delay so it doesn't compete with the opening LLM call
+    setTimeout(() => generateChapterBrief(1, totalChapters, ""), 5000);
+
     let sid = null;
     try {
       const title = `${character.name}'s ${config.genre} adventure`;
       const story = await api.createStory(title, config, character);
       sid = story.id;
       setStoryId(sid);
-    } catch {
-      // Not logged in — play without persistence
-    }
+    } catch { /* not logged in — play without persistence */ }
 
     const openingLength = {
       short:  "3-4 sentences",
       medium: "6-8 sentences (roughly 2 paragraphs)",
       long:   "4-5 rich, descriptive paragraphs",
     }[config.responseLength] || "6-8 sentences";
-    const firstMessage = [{ role: "user", content: `Begin the adventure with an opening of ${openingLength}. Cover all three of these: (1) a brief background on ${character.name} — who they are, their personality, and what has shaped them; (2) the world they live in — its tone, state, and defining features; (3) the current situation — what is happening right now that sets the story in motion. End with 2-5 meaningful choices.` }];
-    const persistOpts = sid ? { story_id: sid, turn_number: 0, user_content: "Begin the adventure." } : {};  // short label for DB
+
+    const firstMessage = [{ role: "user", content:
+      `Begin the adventure with an opening of ${openingLength}. Cover: ` +
+      `(1) a brief background on ${character.name} — who they are, personality, and what shaped them; ` +
+      `(2) the world — its tone, state, and defining features; ` +
+      `(3) the current situation — what is happening right now that sets the story in motion. ` +
+      `End with 2-5 meaningful choices.`
+    }];
+
+    const persistOpts = sid ? { story_id: sid, turn_number: 0, user_content: "Begin the adventure." } : {};
     const result = await callAPI(firstMessage, persistOpts);
     setStoryLog([{ role: "narrator", text: result.story }]);
     setChoices(result.choices || []);
     if (result.stats && config.trackStats) setStats(result.stats);
+    setNextRollRequired({ required: !!result.rollRequired, context: result.rollContext || "" });
     setTurnCount(1);
     setLoading(false);
   };
 
-  const makeChoice = async (choiceText) => {
+  // ─── CHOICE CLICK (checks for dice) ──────────────────────────
+  const handleChoiceClick = (choiceText) => {
+    if (loading || gameOver) return;
+    if (nextRollRequired.required) {
+      setPendingRoll({ context: nextRollRequired.context, choiceText });
+    } else {
+      makeChoice(choiceText, null);
+    }
+  };
+
+  // ─── DICE RESULT → PROCEED ────────────────────────────────────
+  const handleRollResult = (rollInfo) => {
+    const choiceText = pendingRoll.choiceText;
+    setPendingRoll(null);
+    makeChoice(choiceText, rollInfo);
+  };
+
+  // ─── MAKE CHOICE ──────────────────────────────────────────────
+  const makeChoice = async (choiceText, rollInfo = null) => {
     if (loading || gameOver) return;
     setLoading(true);
-    setStoryLog(prev => [...prev, { role: "player", text: choiceText }]);
+
+    // Append player entry and optional roll entry to log
+    const rollEntry = rollInfo ? {
+      role: "roll", value: rollInfo.value, outcome: rollInfo.outcome,
+      context: rollInfo.context || pendingRoll?.context || "",
+      skillBonus: rollInfo.skillBonus,
+    } : null;
+
+    setStoryLog(prev => [
+      ...prev,
+      { role: "player", text: choiceText },
+      ...(rollEntry ? [rollEntry] : []),
+    ]);
     setChoices([]);
 
-    // Build history — sliding window when a summary covers the earlier turns
+    // Build LLM history — skip roll/chapter entries, and strip error/retry pairs
+    const ERROR_MARKERS = ["Something went wrong", "משהו השתבש", "حدث خطأ"];
+    const RETRY_TEXTS   = ["Try again", "נסה שוב", "حاول مرة أخرى"];
+    const rawForHistory = storyLog.filter(e => e.role === "narrator" || e.role === "player");
+    const logForHistory = rawForHistory.filter(e => {
+      if (e.role === "narrator" && ERROR_MARKERS.some(m => e.text.includes(m))) return false;
+      if (e.role === "player" && RETRY_TEXTS.includes(e.text)) return false;
+      return true;
+    });
+
+    // If this is a retry, find the last real player action and resend that instead
+    const isRetry = RETRY_TEXTS.includes(choiceText);
+    const effectiveChoice = isRetry
+      ? (logForHistory.filter(e => e.role === "player").at(-1)?.text ?? choiceText)
+      : choiceText;
+
     let history;
-    if (storySummary.narrative && storyLog.length > WINDOW_SIZE) {
-      let windowLog = storyLog.slice(-WINDOW_SIZE);
-      // Ensure history starts with a player (user) entry
+    if (storySummary.narrative && logForHistory.length > WINDOW_SIZE) {
+      let windowLog = logForHistory.slice(-WINDOW_SIZE);
       const firstPlayer = windowLog.findIndex(e => e.role === "player");
       if (firstPlayer > 0) windowLog = windowLog.slice(firstPlayer);
-      history = [{ role: "user", content: "Continue the adventure. Story context is in the system prompt." }];
+      history = [];
       for (const entry of windowLog) {
         if (entry.role === "narrator") history.push({ role: "assistant", content: JSON.stringify({ story: entry.text, choices: [] }) });
         else history.push({ role: "user", content: `Player chose: "${entry.text}"` });
       }
+      // Ensure the first message is from user (required by most LLM APIs)
+      if (history.length > 0 && history[0].role === "assistant") {
+        history.unshift({ role: "user", content: "[story continues]" });
+      }
     } else {
       history = [{ role: "user", content: `Begin the adventure with an opening covering ${character.name}'s background, the world, and the current situation.` }];
-      for (const entry of storyLog) {
+      for (const entry of logForHistory) {
         if (entry.role === "narrator") history.push({ role: "assistant", content: JSON.stringify({ story: entry.text, choices: [] }) });
         else history.push({ role: "user", content: `Player chose: "${entry.text}"` });
       }
     }
-    history.push({ role: "user", content: `Player chose: "${choiceText}"` });
+
+    // Append player choice + roll result (if any) as last user message
+    let lastMsg = `Player chose: "${effectiveChoice}"`;
+
+    // Inject authoritative current state so LLM never has to infer from trimmed history
+    const stateLines = [];
+    if (config.trackStats) {
+      stateLines.push(`Health: ${stats.health}/100`);
+      if (stats.inventory?.length) stateLines.push(`Inventory: [${stats.inventory.join(", ")}]`);
+      const rels = Object.entries(stats.relationships || {});
+      if (rels.length) stateLines.push(`Relationships: {${rels.map(([k,v]) => `${k}: ${v}`).join(", ")}}`);
+    }
+    if (chapterBrief) {
+      if (chapterProgress.achieved.length) stateLines.push(`Chapter achieved so far: ${chapterProgress.achieved.join("; ")}`);
+      if (chapterProgress.clues.length)    stateLines.push(`Clues found: ${chapterProgress.clues.join("; ")}`);
+    }
+    if (stateLines.length) {
+      lastMsg += `\n\n[CURRENT STATE — carry these values forward and return updated versions]\n${stateLines.join(" | ")}`;
+    }
+
+    if (rollInfo) {
+      const dangerNote = rollInfo.value === 1
+        ? " Narrate a serious consequence. If this was physically dangerous, reduce health in stats."
+        : rollInfo.value <= 3
+        ? " Narrate a complication or setback."
+        : rollInfo.value <= 5
+        ? " Narrate partial success with a catch."
+        : " Narrate exceptional success, perhaps with an unexpected bonus.";
+      lastMsg += `\n\n[FATE CHECK: ${rollInfo.context || "the attempt"}]\nRoll: ${rollInfo.value}/6 — ${rollInfo.outcome}${rollInfo.skillBonus ? " (skill bonus applied)" : ""}.\nOutcome: ${rollInfo.narrative || ""}${dangerNote}`;
+    }
+    history.push({ role: "user", content: lastMsg });
 
     const persistOpts = storyId ? { story_id: storyId, turn_number: turnCount, user_content: choiceText } : {};
     const result = await callAPI(history, persistOpts);
+
     setStoryLog(prev => [...prev, { role: "narrator", text: result.story }]);
     setChoices(result.choices || []);
     if (result.stats && config.trackStats) setStats(result.stats);
     if (result.gameOver) { setGameOver(true); setChoices([]); }
 
+    // Health damage on critical failure if LLM didn't handle it
+    if (rollInfo?.value === 1 && config.trackStats && !result.stats) {
+      setStats(s => ({ ...s, health: Math.max(0, s.health - 15) }));
+    }
+
+    // Store next roll requirement
+    setNextRollRequired({ required: !!result.rollRequired, context: result.rollContext || "" });
+
+    // Update chapter progress (cumulative — merge with existing)
+    if (result.chapterProgress) {
+      const cp = result.chapterProgress;
+      setChapterProgress(prev => ({
+        achieved: [...new Set([...prev.achieved, ...(cp.achieved || [])])],
+        clues:    [...new Set([...prev.clues,    ...(cp.clues    || [])])],
+      }));
+    }
+
+    // Chapter completion
+    if (result.chapterComplete && !result.gameOver) {
+      const nextChap = chapterNumber + 1;
+      if (nextChap <= totalChapters) {
+        const fullLog = [...storyLog, { role: "player", text: choiceText }, { role: "narrator", text: result.story }];
+        const summaryCtx = storySummary.narrative || fullLog.filter(e => e.role !== "roll").map(e => `${e.role}: ${e.text}`).join("\n").slice(0, 600);
+        setChapterProgress({ achieved: [], clues: [] }); // reset for new chapter
+        // Delay so it doesn't compete with the just-completed main call
+        setTimeout(() => generateChapterBrief(nextChap, totalChapters, summaryCtx), 10000);
+      }
+    }
+
     const newTurnCount = turnCount + 1;
     setTurnCount(newTurnCount);
     setLoading(false);
 
-    // Fire background summarization every SUMMARY_EVERY turns — no await, doesn't block player
-    if (newTurnCount % SUMMARY_EVERY === 0) {
+    // Skip summarization for short adventures (Sprint/Short have ≤10 turns — not worth the extra call)
+    if (newTurnCount % SUMMARY_EVERY === 0 && config.storyLength > 10) {
       const fullNewLog = [...storyLog, { role: "player", text: choiceText }, { role: "narrator", text: result.story }];
-      triggerSummarize(fullNewLog, storySummary);
+      // Delay 20s so background summary doesn't compete with the just-completed main call
+      setTimeout(() => triggerSummarize(fullNewLog, storySummary), 20000);
     }
   };
 
-  const handleCustomAction = () => { if (customAction.trim()) { makeChoice(customAction.trim()); setCustomAction(""); } };
+  const handleCustomAction = () => {
+    if (customAction.trim()) { handleChoiceClick(customAction.trim()); setCustomAction(""); }
+  };
 
   const resetGame = () => {
     setPhase("setup"); setSetupStep(0); setStoryLog([]); setChoices([]);
@@ -509,15 +858,18 @@ Provide 2-5 meaningfully different choices.`;
     setGameOver(false); setTurnCount(0); setCustomAction(""); setStoryId(null);
     setCharacter({ name: "", gender: "", age: "", appearance: "", skills: [] });
     setStorySummary({ narrative: "", world: null });
+    setChapterNumber(1); setChapterBrief(null); setChapterBanner(null);
+    setPendingRoll(null); setNextRollRequired({ required: false, context: "" });
+    setChapterProgress({ achieved: [], clues: [] });
   };
 
   const handleExport = () => {
-    const content = exportStoryAsText({ storyLog, config, character, stats, turnCount, gameOver });
+    const content = exportStoryAsText({ storyLog, config, character, stats, turnCount, gameOver, chapterNumber });
     triggerDownload(`${character.name}-adventure-${Date.now()}.txt`, content, "text/plain;charset=utf-8");
   };
 
   const handleSaveGame = () => {
-    const payload = { ...buildSavePayload({ config, character, stats, storyLog, choices, turnCount, gameOver }), storySummary };
+    const payload = buildSavePayload({ config, character, stats, storyLog, choices, turnCount, gameOver, storySummary, chapterNumber, chapterBrief, chapterProgress });
     triggerDownload(`${character.name}-save-${Date.now()}.json`, JSON.stringify(payload, null, 2), "application/json");
   };
 
@@ -539,6 +891,12 @@ Provide 2-5 meaningfully different choices.`;
         setGameOver(save.gameOver || false);
         setStoryId(null);
         setStorySummary(save.storySummary || { narrative: "", world: null });
+        setChapterNumber(save.chapterNumber || 1);
+        setChapterBrief(save.chapterBrief || null);
+        setChapterBanner(null);
+        setPendingRoll(null);
+        setNextRollRequired({ required: false, context: "" });
+        setChapterProgress(save.chapterProgress || { achieved: [], clues: [] });
         setPhase("game");
       } catch {
         alert(t("loadError"));
@@ -548,7 +906,7 @@ Provide 2-5 meaningfully different choices.`;
     e.target.value = "";
   };
 
-  // ─── SETUP STEPS RENDER ───────────────────────────────────────
+  // ─── SETUP STEPS ──────────────────────────────────────────────
   const renderSetupStep = () => {
     const nav = { theme, isRTL, backLabel: t("back"), nextLabel: t("continue_") };
 
@@ -556,16 +914,17 @@ Provide 2-5 meaningfully different choices.`;
       case "language":
         return (
           <SetupCard theme={theme} active isRTL={isRTL} title={t("language")} subtitle={t("languageSub")}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {LANGUAGES.map(l => (
                 <OptionButton key={l.code} theme={theme} selected={config.language === l.code}
                   onClick={() => setConfig(c => ({ ...c, language: l.code }))}
-                  style={{ padding: "10px 12px", fontSize: 14, textAlign: "center" }}>{l.label}</OptionButton>
+                  style={{ textAlign: "center", fontSize: 16 }}>{l.label}</OptionButton>
               ))}
             </div>
             <NavButtons {...nav} onNext={() => setSetupStep(1)} canNext={!!config.language} showBack={false} />
           </SetupCard>
         );
+
       case "genre":
         return (
           <SetupCard theme={theme} active isRTL={isRTL} title={t("chooseWorld")} subtitle={t("chooseWorldSub")}>
@@ -577,9 +936,7 @@ Provide 2-5 meaningfully different choices.`;
                     onClick={() => { setConfig(c => ({ ...c, genre: key })); setCharacter(c => ({ ...c, skills: [] })); }}>
                     {selected ? (
                       <div style={{ display: "flex", justifyContent: "center", gap: 4, marginBottom: 8 }}>
-                        {th.icons.map((ic, i) => (
-                          <span key={i} style={{ fontSize: i === 0 ? 26 : 18, opacity: i === 0 ? 1 : 0.75 }}>{ic}</span>
-                        ))}
+                        {th.icons.map((ic, i) => <span key={i} style={{ fontSize: i === 0 ? 26 : 18, opacity: i === 0 ? 1 : 0.75 }}>{ic}</span>)}
                       </div>
                     ) : (
                       <span style={{ fontSize: 28, display: "block", marginBottom: 6 }}>{th.icon}</span>
@@ -592,6 +949,7 @@ Provide 2-5 meaningfully different choices.`;
             <NavButtons {...nav} theme={THEMES[config.genre] || theme} onBack={() => setSetupStep(0)} onNext={() => setSetupStep(2)} canNext={!!config.genre} />
           </SetupCard>
         );
+
       case "age":
         return (
           <SetupCard theme={theme} active isRTL={isRTL} title={t("contentRating")} subtitle={t("contentRatingSub")}>
@@ -607,6 +965,7 @@ Provide 2-5 meaningfully different choices.`;
             <NavButtons {...nav} onBack={() => setSetupStep(1)} onNext={() => setSetupStep(3)} canNext={!!config.ageTier} />
           </SetupCard>
         );
+
       case "length":
         return (
           <SetupCard theme={theme} active isRTL={isRTL} title={t("storyPacing")} subtitle={t("storyPacingSub")}>
@@ -622,15 +981,16 @@ Provide 2-5 meaningfully different choices.`;
             <NavButtons {...nav} onBack={() => setSetupStep(2)} onNext={() => setSetupStep(4)} canNext={!!config.responseLength} />
           </SetupCard>
         );
+
       case "duration":
         return (
           <SetupCard theme={theme} active isRTL={isRTL} title={t("storyDuration")} subtitle={t("storyDurationSub")}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {[
-                { turns: 5,  icon: "⚡", label: "Sprint",   desc: "~5 turns — a sharp, focused story" },
-                { turns: 10, icon: "🏃", label: "Short",    desc: "~10 turns — a complete adventure" },
-                { turns: 20, icon: "📖", label: "Standard", desc: "~20 turns — room to explore" },
-                { turns: 40, icon: "🏔️", label: "Epic",     desc: "~40 turns — a grand saga" },
+                { turns: 5,  icon: "⚡", label: "Sprint",   desc: `~5 turns — 1 chapter` },
+                { turns: 10, icon: "🏃", label: "Short",    desc: `~10 turns — 2 chapters` },
+                { turns: 20, icon: "📖", label: "Standard", desc: `~20 turns — 4 chapters` },
+                { turns: 40, icon: "🏔️", label: "Epic",     desc: `~40 turns — 8 chapters` },
               ].map(({ turns, icon, label, desc }) => (
                 <OptionButton key={turns} theme={theme} selected={config.storyLength === turns}
                   onClick={() => setConfig(c => ({ ...c, storyLength: turns }))}
@@ -644,6 +1004,7 @@ Provide 2-5 meaningfully different choices.`;
             <NavButtons {...nav} onBack={() => setSetupStep(3)} onNext={() => setSetupStep(5)} canNext={!!config.storyLength} />
           </SetupCard>
         );
+
       case "rules":
         return (
           <SetupCard theme={theme} active isRTL={isRTL} title={t("gameRules")} subtitle={t("gameRulesSub")}>
@@ -672,6 +1033,7 @@ Provide 2-5 meaningfully different choices.`;
             <NavButtons {...nav} onBack={() => setSetupStep(4)} onNext={() => setSetupStep(6)} canNext={config.deathPossible !== null && config.trackStats !== null} />
           </SetupCard>
         );
+
       case "perspective":
         return (
           <SetupCard theme={theme} active isRTL={isRTL} title={t("perspective")} subtitle={t("perspectiveSub")}>
@@ -691,6 +1053,7 @@ Provide 2-5 meaningfully different choices.`;
             <NavButtons {...nav} onBack={() => setSetupStep(5)} onNext={() => setSetupStep(7)} canNext={!!config.perspective} />
           </SetupCard>
         );
+
       case "prompt":
         return (
           <SetupCard theme={theme} active isRTL={isRTL} title={t("storySeed")} subtitle={t("storySeedSub")}>
@@ -700,6 +1063,7 @@ Provide 2-5 meaningfully different choices.`;
             <NavButtons {...nav} onBack={() => setSetupStep(6)} onNext={() => setSetupStep(8)} canNext />
           </SetupCard>
         );
+
       case "character": {
         const skillsDisplay = getSkillsDisplay(config.genre);
         return (
@@ -741,7 +1105,9 @@ Provide 2-5 meaningfully different choices.`;
                     const sel = character.skills.includes(skill);
                     return (
                       <OptionButton key={skill} theme={theme} selected={sel}
-                        onClick={() => setCharacter(c => ({ ...c, skills: sel ? c.skills.filter(s => s !== skill) : c.skills.length < 3 ? [...c.skills, skill] : c.skills }))}
+                        onClick={() => setCharacter(c => ({
+                          ...c, skills: sel ? c.skills.filter(s => s !== skill) : c.skills.length < 3 ? [...c.skills, skill] : c.skills,
+                        }))}
                         style={{ padding: "7px 14px", fontSize: 13 }}>{skill}</OptionButton>
                     );
                   })}
@@ -761,56 +1127,114 @@ Provide 2-5 meaningfully different choices.`;
   const renderGame = () => (
     <div style={{ display: "flex", gap: 20, maxWidth: 900, width: "100%", margin: "0 auto", minHeight: "80vh", direction: isRTL ? "rtl" : "ltr" }}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        {/* Story panel */}
         <div style={{
           background: theme.bgCard, backdropFilter: "blur(20px)", border: `1px solid ${theme.border}`,
           borderRadius: 16, padding: "24px 28px", flex: 1, overflowY: "auto", maxHeight: "70vh",
           boxShadow: "0 10px 40px rgba(0,0,0,0.3)", textAlign: isRTL ? "right" : "left",
         }}>
+          {/* Header */}
           <div style={{ marginBottom: 20, borderBottom: `1px solid ${theme.border}`, paddingBottom: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h1 style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 18, margin: 0 }}>
-              {theme.icon} {character.name}{t("sAdventure")}
-            </h1>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <button onClick={handleSaveGame} title={t("saveGame")} style={{
-                background: "transparent", border: `1px solid ${theme.border}`, borderRadius: 6,
-                padding: "4px 10px", color: theme.textMuted, fontFamily: theme.heading, fontSize: 11,
-                cursor: "pointer", letterSpacing: 0.5, transition: "all 0.2s",
-              }} onMouseOver={e => { e.target.style.borderColor = theme.primary; e.target.style.color = theme.primary; }}
-                 onMouseOut={e =>  { e.target.style.borderColor = theme.border;  e.target.style.color = theme.textMuted; }}>
-                💾 {t("saveGame")}
-              </button>
-              <button onClick={handleExport} title={t("exportStory")} style={{
-                background: "transparent", border: `1px solid ${theme.border}`, borderRadius: 6,
-                padding: "4px 10px", color: theme.textMuted, fontFamily: theme.heading, fontSize: 11,
-                cursor: "pointer", letterSpacing: 0.5, transition: "all 0.2s",
-              }} onMouseOver={e => { e.target.style.borderColor = theme.primary; e.target.style.color = theme.primary; }}
-                 onMouseOut={e =>  { e.target.style.borderColor = theme.border;  e.target.style.color = theme.textMuted; }}>
-                📄 {t("exportStory")}
-              </button>
-              <span style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 12 }}>{t("turn")} {turnCount}</span>
-            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
+              <div>
+                <h1 style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 18, margin: 0 }}>
+                  {theme.icon} {character.name}{t("sAdventure")}
+                </h1>
+                {totalChapters > 1 && chapterBrief && (
+                  <div style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 12, marginTop: 4 }}>
+                    {t("chapterLabel")} {chapterNumber} {t("of")} {totalChapters} — <span style={{ color: theme.primary, fontStyle: "italic" }}>{chapterBrief.title}</span>
+                  </div>
+                )}
+                {chapterBrief && chapterProgress.achieved.length > 0 && (
+                  <div style={{ fontFamily: theme.body, fontSize: 11, marginTop: 6, display: "flex", flexWrap: "wrap", gap: 4 }}>
+                    {chapterProgress.achieved.map((item, i) => (
+                      <span key={i} style={{
+                        background: `${theme.secondary || theme.primary}22`, border: `1px solid ${theme.secondary || theme.primary}44`,
+                        borderRadius: 4, padding: "1px 7px", color: theme.secondary || theme.primary, fontSize: 10,
+                      }}>✓ {item}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <button onClick={handleSaveGame} title={t("saveGame")} style={{
+                  background: "transparent", border: `1px solid ${theme.border}`, borderRadius: 6,
+                  padding: "4px 10px", color: theme.textMuted, fontFamily: theme.heading, fontSize: 11,
+                  cursor: "pointer", letterSpacing: 0.5, transition: "all 0.2s",
+                }}
+                  onMouseOver={e => { e.target.style.borderColor = theme.primary; e.target.style.color = theme.primary; }}
+                  onMouseOut={e  => { e.target.style.borderColor = theme.border;  e.target.style.color = theme.textMuted; }}>
+                  💾 {t("saveGame")}
+                </button>
+                <button onClick={handleExport} title={t("exportStory")} style={{
+                  background: "transparent", border: `1px solid ${theme.border}`, borderRadius: 6,
+                  padding: "4px 10px", color: theme.textMuted, fontFamily: theme.heading, fontSize: 11,
+                  cursor: "pointer", letterSpacing: 0.5, transition: "all 0.2s",
+                }}
+                  onMouseOver={e => { e.target.style.borderColor = theme.primary; e.target.style.color = theme.primary; }}
+                  onMouseOut={e  => { e.target.style.borderColor = theme.border;  e.target.style.color = theme.textMuted; }}>
+                  📄 {t("exportStory")}
+                </button>
+                <span style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 12 }}>{t("turn")} {turnCount}</span>
+              </div>
             </div>
             <GenreIconStrip theme={theme} />
           </div>
 
-          {storyLog.map((entry, i) => (
-            <div key={i} style={{
-              marginBottom: 16, padding: entry.role === "player" ? "8px 14px" : 0,
-              background: entry.role === "player" ? theme.bgStory : "transparent", borderRadius: 8,
-              borderInlineStart: entry.role === "player" ? `3px solid ${theme.primary}` : "none",
-            }}>
-              {entry.role === "player" && (
-                <span style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 11, textTransform: "uppercase", letterSpacing: 1.5 }}>{character.name}</span>
-              )}
-              <p style={{
-                fontFamily: theme.body, color: entry.role === "player" ? theme.primary : theme.text,
-                fontSize: entry.role === "player" ? 14 : 15, lineHeight: 1.7,
-                margin: entry.role === "player" ? "4px 0 0" : 0,
-                fontStyle: entry.role === "player" ? "italic" : "normal", whiteSpace: "pre-wrap",
-              }}>{entry.text}</p>
-            </div>
-          ))}
+          {/* Story log */}
+          {storyLog.map((entry, i) => {
+            if (entry.role === "chapter") {
+              return (
+                <div key={i} style={{
+                  textAlign: "center", margin: "24px 0 20px", padding: "12px 20px",
+                  background: `${theme.primary}10`, border: `1px solid ${theme.primary}30`,
+                  borderRadius: 10,
+                }}>
+                  <div style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 10, textTransform: "uppercase", letterSpacing: 2, marginBottom: 4 }}>
+                    {t("chapterLabel")} {entry.num || ""}
+                  </div>
+                  <div style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 16, letterSpacing: 1 }}>
+                    {entry.text}
+                  </div>
+                </div>
+              );
+            }
+            if (entry.role === "roll") {
+              const oc = DICE_OUTCOMES[entry.value];
+              return (
+                <div key={i} style={{
+                  display: "flex", alignItems: "center", gap: 10, margin: "8px 0",
+                  padding: "7px 14px", background: `${oc?.color || theme.border}15`,
+                  border: `1px solid ${oc?.color || theme.border}35`, borderRadius: 8,
+                  animation: "fadeIn 0.3s ease",
+                }}>
+                  <span style={{ fontSize: 18, color: oc?.color }}>⚄</span>
+                  <span style={{ fontFamily: theme.body, fontSize: 12, color: theme.textMuted }}>
+                    <span style={{ color: oc?.color, fontWeight: 700 }}>{entry.outcome}</span>
+                    {entry.context ? ` — ${entry.context}` : ""}
+                    <span style={{ opacity: 0.6, marginLeft: 6 }}>{entry.value}/6{entry.skillBonus ? " ★" : ""}</span>
+                  </span>
+                </div>
+              );
+            }
+            return (
+              <div key={i} style={{
+                marginBottom: 16, padding: entry.role === "player" ? "8px 14px" : 0,
+                background: entry.role === "player" ? theme.bgStory : "transparent", borderRadius: 8,
+                borderInlineStart: entry.role === "player" ? `3px solid ${theme.primary}` : "none",
+              }}>
+                {entry.role === "player" && (
+                  <span style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 11, textTransform: "uppercase", letterSpacing: 1.5 }}>{character.name}</span>
+                )}
+                <p style={{
+                  fontFamily: theme.body, color: entry.role === "player" ? theme.primary : theme.text,
+                  fontSize: entry.role === "player" ? 14 : 15, lineHeight: 1.7,
+                  margin: entry.role === "player" ? "4px 0 0" : 0,
+                  fontStyle: entry.role === "player" ? "italic" : "normal", whiteSpace: "pre-wrap",
+                }}>{entry.text}</p>
+              </div>
+            );
+          })}
 
           {loading && (
             <div style={{ textAlign: "center", padding: 30 }}>
@@ -837,16 +1261,32 @@ Provide 2-5 meaningfully different choices.`;
           <div ref={storyEndRef} />
         </div>
 
+        {/* Choices panel */}
         {!loading && !gameOver && choices.length > 0 && (
           <div style={{
             background: theme.bgCard, backdropFilter: "blur(20px)", border: `1px solid ${theme.border}`,
             borderRadius: 16, padding: "18px 24px", marginTop: 12, boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
             textAlign: isRTL ? "right" : "left",
           }}>
+            {/* Fate check indicator */}
+            {nextRollRequired.required && (
+              <div style={{
+                display: "flex", alignItems: "center", gap: 8, marginBottom: 12,
+                padding: "7px 12px", background: `${theme.primary}12`,
+                border: `1px solid ${theme.primary}30`, borderRadius: 8,
+              }}>
+                <span style={{ fontSize: 16 }}>⚄</span>
+                <span style={{ fontFamily: theme.body, color: theme.primary, fontSize: 12, opacity: 0.9 }}>
+                  {t("rollRequired")}
+                  {nextRollRequired.context ? ` — "${nextRollRequired.context}"` : ""}
+                </span>
+              </div>
+            )}
+
             <p style={{ fontFamily: theme.heading, color: theme.textMuted, fontSize: 11, textTransform: "uppercase", letterSpacing: 1.5, margin: "0 0 12px" }}>{t("whatDoYouDo")}</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {choices.map((choice, i) => (
-                <OptionButton key={i} theme={theme} onClick={() => makeChoice(choice)}>
+                <OptionButton key={i} theme={theme} onClick={() => handleChoiceClick(choice)}>
                   <span style={{ color: theme.primary, fontWeight: 600, marginInlineEnd: 8 }}>{i + 1}.</span>{choice}
                 </OptionButton>
               ))}
@@ -867,6 +1307,26 @@ Provide 2-5 meaningfully different choices.`;
         )}
       </div>
 
+      {/* Chapter progress sidebar — shown when stats are off but chapters are active */}
+      {!config.trackStats && chapterBrief && (chapterProgress.achieved.length > 0 || chapterProgress.clues.length > 0) && (
+        <div style={{
+          width: 190, flexShrink: 0, background: theme.bgCard, backdropFilter: "blur(20px)",
+          border: `1px solid ${theme.border}`, borderRadius: 16, padding: "18px 14px", alignSelf: "flex-start",
+          position: "sticky", top: 20, boxShadow: "0 10px 40px rgba(0,0,0,0.2)", textAlign: isRTL ? "right" : "left",
+        }}>
+          <h3 style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 12, textTransform: "uppercase", letterSpacing: 1.5, margin: "0 0 12px" }}>
+            {t("chapterLabel")} Progress
+          </h3>
+          {chapterProgress.achieved.map((a, i) => (
+            <div key={i} style={{ fontFamily: theme.body, fontSize: 11, marginBottom: 5, color: theme.secondary || theme.primary }}>✓ {a}</div>
+          ))}
+          {chapterProgress.clues.map((c, i) => (
+            <div key={i} style={{ fontFamily: theme.body, fontSize: 10, marginBottom: 4, color: theme.primary, opacity: 0.75, fontStyle: "italic" }}>💡 {c}</div>
+          ))}
+        </div>
+      )}
+
+      {/* Stats sidebar */}
       {config.trackStats && (
         <div style={{
           width: 200, flexShrink: 0, background: theme.bgCard, backdropFilter: "blur(20px)",
@@ -890,13 +1350,26 @@ Provide 2-5 meaningfully different choices.`;
             </div>
           )}
           {stats.relationships && Object.keys(stats.relationships).length > 0 && (
-            <div>
+            <div style={{ marginBottom: 16 }}>
               <span style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 11, textTransform: "uppercase" }}>{t("relationships")}</span>
               {Object.entries(stats.relationships).map(([rName, desc]) => (
                 <div key={rName} style={{ fontFamily: theme.body, fontSize: 11, marginTop: 6 }}>
                   <span style={{ color: theme.primary }}>{rName}</span>
                   <span style={{ color: theme.textMuted, display: "block" }}>{String(desc)}</span>
                 </div>
+              ))}
+            </div>
+          )}
+          {chapterBrief && (chapterProgress.achieved.length > 0 || chapterProgress.clues.length > 0) && (
+            <div>
+              <span style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>
+                {t("chapterLabel")} {t("stats") === "Stats" ? "Progress" : "התקדמות"}
+              </span>
+              {chapterProgress.achieved.map((a, i) => (
+                <div key={i} style={{ fontFamily: theme.body, fontSize: 11, marginTop: 5, color: theme.secondary || theme.primary }}>✓ {a}</div>
+              ))}
+              {chapterProgress.clues.map((c, i) => (
+                <div key={i} style={{ fontFamily: theme.body, fontSize: 10, marginTop: 4, color: theme.primary, opacity: 0.75, fontStyle: "italic" }}>💡 {c}</div>
               ))}
             </div>
           )}
@@ -914,19 +1387,42 @@ Provide 2-5 meaningfully different choices.`;
         @keyframes float0 { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-30px) rotate(5deg); } }
         @keyframes float1 { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-20px) rotate(-3deg); } }
         @keyframes float2 { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-40px) rotate(8deg); } }
-        @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.5; transform:scale(1.1); } }
+        @keyframes pulse  { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.5; transform:scale(1.1); } }
+        @keyframes fadeIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+        @keyframes diceRoll { 0%,100% { transform:rotate(0deg) scale(1); } 25% { transform:rotate(-15deg) scale(1.05); } 75% { transform:rotate(15deg) scale(0.95); } }
+        @keyframes chapterFade { 0% { opacity:0; transform:translateY(-20px) scale(0.95); } 15%,85% { opacity:1; transform:translateY(0) scale(1); } 100% { opacity:0; transform:translateY(-10px) scale(0.98); } }
         * { box-sizing: border-box; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: ${theme.border}; border-radius: 3px; }
         ::placeholder { color: ${theme.textMuted}; opacity: 0.6; }
       `}</style>
+
       <div style={{
         minHeight: "100vh", background: theme.bg, backgroundImage: theme.bgImage,
         padding: "40px 20px", fontFamily: theme.body, color: theme.text, transition: "background 0.6s ease",
         direction: isRTL ? "rtl" : "ltr",
       }}>
         <FloatingParticles theme={theme} />
+
+        {/* Chapter banner overlay */}
+        {chapterBanner && (
+          <div style={{
+            position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+            background: theme.bgCard, border: `1px solid ${theme.primary}`,
+            borderRadius: 16, padding: "28px 52px", textAlign: "center", zIndex: 500,
+            boxShadow: `0 0 60px ${theme.primary}30, 0 20px 60px rgba(0,0,0,0.6)`,
+            animation: "chapterFade 5s ease-in-out forwards", pointerEvents: "none",
+          }}>
+            <div style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 11, textTransform: "uppercase", letterSpacing: 3, marginBottom: 10 }}>
+              {t("chapterLabel")} {chapterNumber} {t("of")} {totalChapters}
+            </div>
+            <div style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 26, letterSpacing: 1, textShadow: `0 0 30px ${theme.primary}60` }}>
+              {chapterBanner}
+            </div>
+          </div>
+        )}
+
         <div style={{ position: "relative", zIndex: 1 }}>
           {phase === "setup" && (
             <div style={{ maxWidth: 600, margin: "0 auto" }}>
@@ -952,6 +1448,19 @@ Provide 2-5 meaningfully different choices.`;
           {phase === "game" && renderGame()}
         </div>
       </div>
+
+      {/* Dice roller overlay — renders above everything */}
+      {pendingRoll && (
+        <DiceRoller
+          theme={theme}
+          context={pendingRoll.context}
+          characterSkills={character.skills}
+          onResult={handleRollResult}
+          isRTL={isRTL}
+          t={t}
+        />
+      )}
+
       <input ref={fileInputRef} type="file" accept=".json" style={{ display: "none" }} onChange={handleFileChange} />
     </>
   );
