@@ -87,7 +87,8 @@ The current values of stats and chapter progress are stamped into every outgoing
 ### Gameplay
 
 - AI narrates the story in the chosen language and perspective
-- 2–5 meaningful choices per turn, plus a free-text action input
+- Free-text action input is the primary way to play — players write what they want to do
+- 2–5 suggested choices are shown below as quick-pick alternatives
 - Optional stat tracking: health bar, inventory, relationships
 - Story arc pacing — the LLM receives its current phase (Opening / Early / Middle / Late / Climax / Finale) so the story develops and concludes naturally
 
@@ -127,15 +128,19 @@ Each genre has its own colour palette, fonts, background, and persistent icon st
 
 ## Supported LLM providers
 
-| Provider | Free tier | Endpoint |
-|---|---|---|
-| **Groq** | 14,400 req/day | `https://api.groq.com/openai/v1/chat/completions` |
-| **Gemini** | 1,500 req/day (AI Studio key) | `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` |
-| **Anthropic** | Paid | `https://api.anthropic.com/v1/messages` |
+| Provider | Free tier | Model | Endpoint |
+|---|---|---|---|
+| **Gemini** (recommended) | 1,500 req/day, 1M TPM | `gemini-2.5-flash` | `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` |
+| **Groq** | 14,400 req/day, 6K TPM | `llama-3.3-70b-versatile` | `https://api.groq.com/openai/v1/chat/completions` |
+| **Anthropic** | Paid | `claude-sonnet-4-6` | `https://api.anthropic.com/v1/messages` |
 
-Groq is recommended for free use — fast, reliable, no quota issues.
+**Gemini 2.5 Flash** is recommended — 1,000,000 TPM means no rate-limit issues during play. Use model `gemini-2.5-flash` (not `gemini-2.0-flash`, which has zero free-tier quota in some regions). Get a free key at [aistudio.google.com](https://aistudio.google.com) → Get API key → Create API key in new project.
+
+**Groq** works but its 6,000 TPM free-tier limit causes 429 errors during active play sessions.
 
 The backend automatically retries on rate-limit (429) errors, parsing the `"try again in Xs"` hint from the error body and sleeping the exact wait time before retrying (up to 2 retries).
+
+For Gemini models the backend automatically disables thinking (`reasoning_effort: none`) so all tokens go to the actual JSON response rather than internal reasoning.
 
 LLM configuration can be changed at runtime without restarting the server via `POST /api/config/llm`.
 
@@ -194,10 +199,10 @@ Frontend: http://localhost:5173
 
 | Variable | Description | Example |
 |---|---|---|
-| `LLM_ENDPOINT` | LLM API URL | `https://api.groq.com/openai/v1/chat/completions` |
-| `LLM_API_KEY` | API key | `gsk_...` |
-| `LLM_MODEL` | Model name | `llama-3.3-70b-versatile` |
-| `LLM_MAX_TOKENS` | Max output tokens per call | `800` |
+| `LLM_ENDPOINT` | LLM API URL | `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` |
+| `LLM_API_KEY` | API key | `AIza...` (Gemini) or `gsk_...` (Groq) |
+| `LLM_MODEL` | Model name | `gemini-2.5-flash` |
+| `LLM_MAX_TOKENS` | Max output tokens per call | `2000` |
 | `SECRET_KEY` | JWT signing secret | any long random string |
 | `DATABASE_URL` | DB connection | `sqlite:///./stories.db` |
 | `CORS_ORIGINS` | Allowed origins | `http://localhost:5173` |

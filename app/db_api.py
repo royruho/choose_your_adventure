@@ -107,6 +107,9 @@ def update_llm_config(req: LLMConfigUpdate):
 def _is_anthropic(endpoint: str) -> bool:
     return "anthropic.com" in endpoint
 
+def _is_gemini(endpoint: str) -> bool:
+    return "generativelanguage.googleapis.com" in endpoint
+
 
 def _parse_retry_after(response: httpx.Response) -> float:
     """Extract wait-seconds from a 429 response body. Falls back to 6s."""
@@ -168,6 +171,11 @@ async def llm_chat(req: ChatRequest, db: Session = Depends(get_db), current_user
                         "messages": openai_messages,
                         "response_format": {"type": "json_object"},
                     }
+                    if _is_gemini(endpoint):
+                        # Disable thinking — for structured JSON tasks thinking wastes
+                        # the token budget and can truncate the response.
+                        # The OpenAI-compat endpoint uses reasoning_effort, not thinking_config.
+                        body["reasoning_effort"] = "none"
                     response = await client.post(
                         endpoint,
                         headers={
@@ -205,11 +213,22 @@ async def llm_chat(req: ChatRequest, db: Session = Depends(get_db), current_user
     except httpx.RequestError as e:
         raise HTTPException(status_code=502, detail=f"LLM connection error: {str(e)}")
 
-    # Parse the JSON the LLM returns (it may be wrapped in markdown fences)
+    # Parse the JSON the LLM returns.
+    # Strategy: strip fences, then try direct parse, then try extracting the
+    # outermost {...} block (handles preamble/postamble text from thinking models).
     clean = raw_text.replace("```json", "").replace("```", "").strip()
+    result = None
     try:
         result = json.loads(clean)
     except json.JSONDecodeError:
+        # Try to find the first complete JSON object in the text
+        m = re.search(r'\{[\s\S]*\}', clean)
+        if m:
+            try:
+                result = json.loads(m.group(0))
+            except json.JSONDecodeError:
+                pass
+    if result is None:
         result = {
             "story": clean,
             "choices": [],

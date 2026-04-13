@@ -62,9 +62,10 @@ const TR = {
   beginAdventure:   { English: "Begin Adventure", Hebrew: "התחל הרפתקה" },
   continue_:        { English: "Continue", Hebrew: "המשך" },
   back:             { English: "← Back", Hebrew: "חזרה →" },
-  whatDoYouDo:      { English: "What do you do?", Hebrew: "מה אתה עושה?" },
-  typeAction:       { English: "Or type your own action...", Hebrew: "או הקלד פעולה משלך..." },
-  go:               { English: "Go", Hebrew: "קדימה" },
+  whatDoYouDo:      { English: "What do you do?", Hebrew: "מה אתה עושה?", Arabic: "ماذا تفعل؟" },
+  typeAction:       { English: "Write your action...", Hebrew: "כתוב את הפעולה שלך...", Arabic: "اكتب فعلك..." },
+  orChoose:         { English: "or pick a suggestion", Hebrew: "או בחר הצעה", Arabic: "أو اختر اقتراحاً" },
+  go:               { English: "Go", Hebrew: "קדימה", Arabic: "انطلق" },
   stats:            { English: "Stats", Hebrew: "נתונים" },
   health:           { English: "Health", Hebrew: "בריאות" },
   inventory:        { English: "Inventory", Hebrew: "מלאי" },
@@ -742,8 +743,9 @@ Provide 2-5 meaningfully different choices.`;
 
     // If this is a retry, find the last real player action and resend that instead
     const isRetry = RETRY_TEXTS.includes(choiceText);
+    const priorPlayerActions = logForHistory.filter(e => e.role === "player");
     const effectiveChoice = isRetry
-      ? (logForHistory.filter(e => e.role === "player").at(-1)?.text ?? choiceText)
+      ? (priorPlayerActions.at(-1)?.text ?? null)  // null = opening-turn retry, no prior action exists
       : choiceText;
 
     let history;
@@ -768,38 +770,42 @@ Provide 2-5 meaningfully different choices.`;
       }
     }
 
-    // Append player choice + roll result (if any) as last user message
-    let lastMsg = `Player chose: "${effectiveChoice}"`;
+    // Append player choice as last user message.
+    // effectiveChoice is null only when retrying the opening turn (no prior player actions) —
+    // in that case the opening "Begin the adventure..." message is already the last entry in history.
+    if (effectiveChoice !== null) {
+      let lastMsg = `Player chose: "${effectiveChoice}"`;
 
-    // Inject authoritative current state so LLM never has to infer from trimmed history
-    const stateLines = [];
-    if (config.trackStats) {
-      stateLines.push(`Health: ${stats.health}/100`);
-      if (stats.inventory?.length) stateLines.push(`Inventory: [${stats.inventory.join(", ")}]`);
-      const rels = Object.entries(stats.relationships || {});
-      if (rels.length) stateLines.push(`Relationships: {${rels.map(([k,v]) => `${k}: ${v}`).join(", ")}}`);
-    }
-    if (chapterBrief) {
-      if (chapterProgress.achieved.length) stateLines.push(`Chapter achieved so far: ${chapterProgress.achieved.join("; ")}`);
-      if (chapterProgress.clues.length)    stateLines.push(`Clues found: ${chapterProgress.clues.join("; ")}`);
-    }
-    if (stateLines.length) {
-      lastMsg += `\n\n[CURRENT STATE — carry these values forward and return updated versions]\n${stateLines.join(" | ")}`;
+      // Inject authoritative current state so LLM never has to infer from trimmed history
+      const stateLines = [];
+      if (config.trackStats) {
+        stateLines.push(`Health: ${stats.health}/100`);
+        if (stats.inventory?.length) stateLines.push(`Inventory: [${stats.inventory.join(", ")}]`);
+        const rels = Object.entries(stats.relationships || {});
+        if (rels.length) stateLines.push(`Relationships: {${rels.map(([k,v]) => `${k}: ${v}`).join(", ")}}`);
+      }
+      if (chapterBrief) {
+        if (chapterProgress.achieved.length) stateLines.push(`Chapter achieved so far: ${chapterProgress.achieved.join("; ")}`);
+        if (chapterProgress.clues.length)    stateLines.push(`Clues found: ${chapterProgress.clues.join("; ")}`);
+      }
+      if (stateLines.length) {
+        lastMsg += `\n\n[CURRENT STATE — carry these values forward and return updated versions]\n${stateLines.join(" | ")}`;
+      }
+
+      if (rollInfo) {
+        const dangerNote = rollInfo.value === 1
+          ? " Narrate a serious consequence. If this was physically dangerous, reduce health in stats."
+          : rollInfo.value <= 3
+          ? " Narrate a complication or setback."
+          : rollInfo.value <= 5
+          ? " Narrate partial success with a catch."
+          : " Narrate exceptional success, perhaps with an unexpected bonus.";
+        lastMsg += `\n\n[FATE CHECK: ${rollInfo.context || "the attempt"}]\nRoll: ${rollInfo.value}/6 — ${rollInfo.outcome}${rollInfo.skillBonus ? " (skill bonus applied)" : ""}.\nOutcome: ${rollInfo.narrative || ""}${dangerNote}`;
+      }
+      history.push({ role: "user", content: lastMsg });
     }
 
-    if (rollInfo) {
-      const dangerNote = rollInfo.value === 1
-        ? " Narrate a serious consequence. If this was physically dangerous, reduce health in stats."
-        : rollInfo.value <= 3
-        ? " Narrate a complication or setback."
-        : rollInfo.value <= 5
-        ? " Narrate partial success with a catch."
-        : " Narrate exceptional success, perhaps with an unexpected bonus.";
-      lastMsg += `\n\n[FATE CHECK: ${rollInfo.context || "the attempt"}]\nRoll: ${rollInfo.value}/6 — ${rollInfo.outcome}${rollInfo.skillBonus ? " (skill bonus applied)" : ""}.\nOutcome: ${rollInfo.narrative || ""}${dangerNote}`;
-    }
-    history.push({ role: "user", content: lastMsg });
-
-    const persistOpts = storyId ? { story_id: storyId, turn_number: turnCount, user_content: choiceText } : {};
+    const persistOpts = storyId ? { story_id: storyId, turn_number: turnCount, user_content: effectiveChoice ?? choiceText } : {};
     const result = await callAPI(history, persistOpts);
 
     setStoryLog(prev => [...prev, { role: "narrator", text: result.story }]);
@@ -1283,19 +1289,14 @@ Provide 2-5 meaningfully different choices.`;
               </div>
             )}
 
-            <p style={{ fontFamily: theme.heading, color: theme.textMuted, fontSize: 11, textTransform: "uppercase", letterSpacing: 1.5, margin: "0 0 12px" }}>{t("whatDoYouDo")}</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {choices.map((choice, i) => (
-                <OptionButton key={i} theme={theme} onClick={() => handleChoiceClick(choice)}>
-                  <span style={{ color: theme.primary, fontWeight: 600, marginInlineEnd: 8 }}>{i + 1}.</span>{choice}
-                </OptionButton>
-              ))}
-            </div>
-            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <p style={{ fontFamily: theme.heading, color: theme.textMuted, fontSize: 11, textTransform: "uppercase", letterSpacing: 1.5, margin: "0 0 10px" }}>{t("whatDoYouDo")}</p>
+            {/* Primary action — text input */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
               <input value={customAction} onChange={e => setCustomAction(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleCustomAction()}
                 placeholder={t("typeAction")}
-                style={{ ...inputStyle(theme), flex: 1, margin: 0, direction: isRTL ? "rtl" : "ltr" }} />
+                autoFocus
+                style={{ ...inputStyle(theme), flex: 1, margin: 0, fontSize: 14, direction: isRTL ? "rtl" : "ltr" }} />
               <button onClick={handleCustomAction} style={{
                 background: customAction.trim() ? theme.primary : theme.border,
                 border: "none", borderRadius: 8, padding: "10px 18px", color: theme.bg,
@@ -1303,6 +1304,19 @@ Provide 2-5 meaningfully different choices.`;
                 fontWeight: 700, transition: "all 0.2s",
               }}>{t("go")}</button>
             </div>
+            {/* Suggestions */}
+            {choices.length > 0 && (
+              <>
+                <p style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 11, margin: "0 0 8px", opacity: 0.7 }}>{t("orChoose")}</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {choices.map((choice, i) => (
+                    <OptionButton key={i} theme={theme} onClick={() => handleChoiceClick(choice)}>
+                      <span style={{ color: theme.primary, fontWeight: 600, marginInlineEnd: 8, opacity: 0.7 }}>{i + 1}.</span>{choice}
+                    </OptionButton>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

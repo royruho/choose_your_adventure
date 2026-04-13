@@ -61,10 +61,10 @@ docker compose exec backend alembic upgrade head   # first run only
 
 | Variable | Description | Example |
 |---|---|---|
-| `LLM_ENDPOINT` | LLM API URL | `https://api.groq.com/openai/v1/chat/completions` |
-| `LLM_API_KEY` | API key | `gsk_...` |
-| `LLM_MODEL` | Model name | `llama-3.3-70b-versatile` |
-| `LLM_MAX_TOKENS` | Max output tokens per call | `800` |
+| `LLM_ENDPOINT` | LLM API URL | `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` |
+| `LLM_API_KEY` | API key | `AIza...` (Gemini) or `gsk_...` (Groq) |
+| `LLM_MODEL` | Model name | `gemini-2.5-flash` |
+| `LLM_MAX_TOKENS` | Max output tokens per call | `2000` |
 | `SECRET_KEY` | JWT signing secret | any long random string |
 | `DATABASE_URL` | DB connection string | `sqlite:///./stories.db` |
 | `CORS_ORIGINS` | Comma-separated allowed origins | `http://localhost:5173` |
@@ -83,13 +83,17 @@ The backend auto-detects the provider from the endpoint URL:
 
 | Provider | Endpoint | Notes |
 |---|---|---|
-| Groq | `https://api.groq.com/openai/v1/chat/completions` | Recommended — free, fast |
-| Gemini | `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` | Free tier, regional limits |
+| Gemini | `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` | **Recommended** — free, 1M TPM. Use `gemini-2.5-flash`. |
+| Groq | `https://api.groq.com/openai/v1/chat/completions` | Free but 6K TPM — rate limits during active play |
 | Anthropic | `https://api.anthropic.com/v1/messages` | Paid |
 
 LLM config can be changed at runtime via `POST /api/config/llm`.
 
+**Gemini-specific**: `_is_gemini(endpoint)` detects Gemini endpoints. When detected, `reasoning_effort: "none"` is added to the request body to disable internal thinking — thinking tokens compete with output tokens and can truncate the JSON response. `gemini-2.0-flash` has zero free-tier quota in some regions (e.g. Israel); use `gemini-2.5-flash` instead.
+
 **Rate limit handling** (`app/db_api.py`): on HTTP 429, the backend parses the `"try again in Xs"` message from the error body, sleeps that duration + 1 s, and retries up to 2 times transparently. After 3 failures it returns a clean 429 to the client.
+
+**JSON extraction** (`app/db_api.py`): after stripping markdown fences, if `json.loads` fails a regex extracts the first `{...}` block from the raw text. This handles preamble/postamble text that some models add around JSON.
 
 ---
 
