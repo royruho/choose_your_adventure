@@ -8,10 +8,24 @@ This file tells Claude Code everything it needs to know to work effectively in t
 
 An AI-powered choose-your-own-adventure game with a chapter-based structure and dice-roll fate checks.
 
-- **Frontend**: React + Vite (`frontend/`) — all UI, no direct LLM access
-- **Backend**: FastAPI (`app/`) — LLM proxy, JWT auth, story persistence, rate-limit retry
-- **Database**: SQLite locally, PostgreSQL (Aiven) in the cloud
-- **AI**: Any OpenAI-compatible LLM endpoint (currently Groq `llama-3.3-70b-versatile`)
+- **Frontend**: React + Vite (`frontend/`) — **fully static** deployment, calls Gemini API directly from the browser. No backend required.
+- **Backend**: FastAPI (`app/`) — kept for potential future accounts feature, but **not used by the frontend**.
+- **AI**: Gemini 2.5 Flash (`gemini-2.5-flash`) via Google AI Studio free key. User provides their own key — stored in `localStorage`, never sent to a server.
+- **Save/Load**: File-based (JSON files on user's machine). No server-side persistence.
+
+### App flow
+
+```
+Load app
+  ↓
+Check localStorage for "gemini_api_key"
+  ├── No key → keySetup screen (enter + validate key)
+  └── Key exists → home screen
+        ├── Start New Adventure → setup wizard → game
+        └── Load Saved Adventure → file picker → game
+```
+
+Phase progression: `"keySetup"` → `"home"` → `"setup"` → `"game"`
 
 ---
 
@@ -29,7 +43,7 @@ app/
 frontend/
   src/
     adventure.jsx  Entire game UI — setup wizard, gameplay, all state
-    api.js         API client (wraps fetch, reads VITE_API_URL)
+    api.js         Direct Gemini client — api.chat() and api.validateKey(). Key read from localStorage.
   Dockerfile       Node 20 Alpine, Vite dev server on port 5173
 
 alembic/          Database migrations
@@ -347,8 +361,8 @@ DATABASE_URL="postgres://..." alembic upgrade head
 
 ## What NOT to do
 
-- Do not add LLM calls in the frontend — all AI calls go through `/api/llm/chat`
-- Do not store API keys in the frontend — they live in `.env` on the backend
+- Do not route LLM calls through the backend — `api.js` calls Gemini directly from the browser
+- Do not hardcode the Gemini API key anywhere — it is user-provided and stored only in `localStorage` under `"gemini_api_key"`
 - Do not hardcode step numbers — always update all `setSetupStep()` calls when inserting a step
 - Background calls (`triggerSummarize`, `generateChapterBrief`) must not block gameplay — never `await` them
 - Do not set `chapterComplete: true` based on turn count — it must be triggered only when the single chapter goal is achieved
@@ -356,3 +370,4 @@ DATABASE_URL="postgres://..." alembic upgrade head
 - Do not add `setting` or `resolutionCondition` back to the chapter brief — both were intentionally removed
 - Do not put `chapterProgress` in the system prompt — it belongs only in the `[CURRENT STATE]` user message block
 - Do not trigger FINALE/CLIMAX phases when the player is not on the last chapter — the phase calculation uses `isLastChapter` guard for exactly this reason
+- Save files use `version: 3`. `loadAndValidateSave()` accepts v2 and v3; reject anything below v2 with the `"version"` error so the caller shows `t("versionError")` instead of `t("loadError")`

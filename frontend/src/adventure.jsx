@@ -97,6 +97,25 @@ const TR = {
   critSuccess:      { English: "Critical Success!", Hebrew: "הצלחה מוחלטת!" },
   skillBonusApplied:{ English: "Skill Bonus — rolled twice, kept highest", Hebrew: "בונוס כישור — הוטל פעמיים, נשמר הגבוה" },
   rollRequired:     { English: "Next action may require a fate check", Hebrew: "הפעולה הבאה עשויה לדרוש בדיקת גורל" },
+  // ── Key setup screen ──
+  keySetupTitle:    { English: "Enter your Gemini API Key", Hebrew: "הזן את מפתח ה-API של Gemini", Arabic: "أدخل مفتاح Gemini API" },
+  keySetupSub:      { English: "This app runs entirely in your browser. Your key is stored only on this device and never sent to any server except Google's Gemini API.", Hebrew: "האפליקציה פועלת לחלוטין בדפדפן שלך. המפתח מאוחסן רק במכשיר זה ולא נשלח לשום שרת מלבד Gemini API של Google.", Arabic: "يعمل هذا التطبيق بالكامل في متصفحك. يُخزَّن مفتاحك فقط على هذا الجهاز ولا يُرسَل إلى أي خادم سوى Gemini API من Google." },
+  keyPlaceholder:   { English: "Paste your Gemini key here (starts with AIza...)", Hebrew: "הדבק את מפתח ה-Gemini כאן (מתחיל ב-AIza...)", Arabic: "الصق مفتاح Gemini هنا (يبدأ بـ AIza...)" },
+  keyValidate:      { English: "Validate & Save", Hebrew: "אמת ושמור", Arabic: "تحقق واحفظ" },
+  keyValidating:    { English: "Validating...", Hebrew: "מאמת...", Arabic: "جارٍ التحقق..." },
+  keyHowTo:         { English: "How to get a free Gemini key", Hebrew: "איך מקבלים מפתח Gemini בחינם", Arabic: "كيف تحصل على مفتاح Gemini مجاناً" },
+  keyStep1:         { English: "Go to aistudio.google.com and sign in", Hebrew: "עבור אל aistudio.google.com והתחבר", Arabic: "انتقل إلى aistudio.google.com وسجّل الدخول" },
+  keyStep2:         { English: "Click \"Get API key\" → \"Create API key in new project\"", Hebrew: "לחץ על \"Get API key\" ← \"Create API key in new project\"", Arabic: "انقر على \"Get API key\" ← \"Create API key in new project\"" },
+  keyStep3:         { English: "Copy the key (starts with AIza) and paste it above", Hebrew: "העתק את המפתח (מתחיל ב-AIza) והדבק אותו למעלה", Arabic: "انسخ المفتاح (يبدأ بـ AIza) والصقه أعلاه" },
+  keyStep4:         { English: "Free tier: 1,500 requests/day, 1,000,000 tokens/min — no rate limits during play", Hebrew: "תוכנית חינמית: 1,500 בקשות ליום, 1,000,000 טוקנים לדקה — ללא הגבלת קצב במשחק", Arabic: "الطبقة المجانية: 1,500 طلب/يوم، مليون رمز/دقيقة — بلا قيود أثناء اللعب" },
+  keyError:         { English: "Could not validate key", Hebrew: "לא ניתן לאמת את המפתח", Arabic: "تعذّر التحقق من المفتاح" },
+  changeKey:        { English: "Change API key", Hebrew: "שנה מפתח API", Arabic: "تغيير مفتاح API" },
+  // ── Home screen ──
+  homeTitle:        { English: "Adventure Awaits", Hebrew: "הרפתקה מחכה", Arabic: "المغامرة تنتظر" },
+  startNew:         { English: "Start New Adventure", Hebrew: "התחל הרפתקה חדשה", Arabic: "ابدأ مغامرة جديدة" },
+  loadSaved:        { English: "Load Saved Adventure", Hebrew: "טען הרפתקה שמורה", Arabic: "تحميل مغامرة محفوظة" },
+  loadSavedSub:     { English: "Resume from a .json save file", Hebrew: "המשך מקובץ שמירה .json", Arabic: "استئناف من ملف حفظ .json" },
+  versionError:     { English: "This save file was created with an incompatible version of the app and cannot be loaded.", Hebrew: "קובץ השמירה נוצר עם גרסה לא תואמת של האפליקציה ולא ניתן לטעון אותו.", Arabic: "تم إنشاء ملف الحفظ هذا بإصدار غير متوافق من التطبيق ولا يمكن تحميله." },
 };
 
 // ─── THEMES ────────────────────────────────────────────────────
@@ -433,7 +452,7 @@ function triggerDownload(filename, content, mime) {
 
 function buildSavePayload({ config, character, stats, storyLog, choices, turnCount, gameOver, storySummary, chapterNumber, chapterBrief, chapterProgress }) {
   return {
-    version: 2, savedAt: new Date().toISOString(),
+    version: 3, savedAt: new Date().toISOString(),
     config, character, stats, storyLog, choices, turnCount, gameOver,
     storySummary, chapterNumber, chapterBrief, chapterProgress,
   };
@@ -442,13 +461,17 @@ function buildSavePayload({ config, character, stats, storyLog, choices, turnCou
 function loadAndValidateSave(json) {
   const data = JSON.parse(json);
   if (!data.config || !data.character || !Array.isArray(data.storyLog))
-    throw new Error("Invalid save file");
+    throw new Error("invalid");
+  // Version 2 and 3 are supported; anything else (or missing) is rejected
+  if (data.version !== undefined && data.version < 2)
+    throw new Error("version");
   return data;
 }
 
 // ─── MAIN APP ──────────────────────────────────────────────────
 export default function AdventureGame() {
-  const [phase, setPhase]           = useState("setup");
+  const storedKey = typeof localStorage !== "undefined" ? localStorage.getItem("gemini_api_key") : "";
+  const [phase, setPhase]           = useState(storedKey ? "home" : "keySetup");
   const [setupStep, setSetupStep]   = useState(0);
   const [config, setConfig]         = useState({ genre: "", language: "English", ageTier: "", responseLength: "", storyLength: 15, deathPossible: null, trackStats: null, perspective: "second", storyPrompt: "" });
   const [character, setCharacter]   = useState({ name: "", gender: "", age: "", appearance: "", skills: [] });
@@ -459,7 +482,6 @@ export default function AdventureGame() {
   const [customAction, setCustomAction] = useState("");
   const [turnCount, setTurnCount]   = useState(0);
   const [gameOver, setGameOver]     = useState(false);
-  const [storyId, setStoryId]       = useState(null);
   const [storySummary, setStorySummary] = useState({ narrative: "", world: null });
   // Chapter system
   const [chapterNumber, setChapterNumber] = useState(1);
@@ -470,6 +492,10 @@ export default function AdventureGame() {
   const [nextRollRequired, setNextRollRequired] = useState({ required: false, context: "" });
   // Chapter progress — tracks partial goal completion within current chapter
   const [chapterProgress, setChapterProgress] = useState({ achieved: [], clues: [] });
+
+  const [keyInput, setKeyInput]         = useState("");
+  const [keyError, setKeyError]         = useState("");
+  const [keyValidating, setKeyValidating] = useState(false);
 
   const storyEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -580,18 +606,20 @@ Provide 2-5 meaningfully different choices.`;
   }, [config, character, isHebrew, isRTL, turnCount, storySummary, chapterBrief, chapterNumber, totalChapters, stats]);
 
   // ─── API CALL ─────────────────────────────────────────────────
-  const callAPI = useCallback(async (messages, persistOpts = {}) => {
+  const callAPI = useCallback(async (messages, opts = {}) => {
     try {
-      return await api.chat(buildSystemPrompt(), messages, persistOpts);
+      return await api.chat(buildSystemPrompt(), messages, opts);
     } catch (err) {
       console.error("API error:", err);
+      const errorMsg = lang === "Hebrew" ? "משהו השתבש... נסה שוב." : lang === "Arabic" ? "حدث خطأ... حاول مرة أخرى." : "Something went wrong... try again.";
+      const retryMsg = lang === "Hebrew" ? "נסה שוב" : lang === "Arabic" ? "حاول مرة أخرى" : "Try again";
       return {
-        story: isHebrew ? "משהו השתבש... נסה שוב." : "Something went wrong... try again.",
-        choices: [isHebrew ? "נסה שוב" : "Try again"],
+        story: errorMsg,
+        choices: [retryMsg],
         gameOver: false, rollRequired: false, rollContext: "", chapterComplete: false,
       };
     }
-  }, [buildSystemPrompt, isHebrew]);
+  }, [buildSystemPrompt, lang]);
 
   // ─── BACKGROUND SUMMARIZER ─────────────────────────────────────
   const triggerSummarize = useCallback(async (fullLog, currentSummary) => {
@@ -655,6 +683,22 @@ Provide 2-5 meaningfully different choices.`;
     }
   }, [config, character]);
 
+  // ─── KEY SETUP ────────────────────────────────────────────────
+  const handleValidateKey = async () => {
+    setKeyError("");
+    setKeyValidating(true);
+    try {
+      await api.validateKey(keyInput);
+      const trimmed = keyInput.trim();
+      localStorage.setItem("gemini_api_key", trimmed);
+      setPhase("home");
+    } catch (err) {
+      setKeyError(err.message);
+    } finally {
+      setKeyValidating(false);
+    }
+  };
+
   // ─── START ADVENTURE ──────────────────────────────────────────
   const startAdventure = async () => {
     setPhase("game");
@@ -662,14 +706,6 @@ Provide 2-5 meaningfully different choices.`;
 
     // Generate chapter 1 brief after a short delay so it doesn't compete with the opening LLM call
     setTimeout(() => generateChapterBrief(1, totalChapters, ""), 5000);
-
-    let sid = null;
-    try {
-      const title = `${character.name}'s ${config.genre} adventure`;
-      const story = await api.createStory(title, config, character);
-      sid = story.id;
-      setStoryId(sid);
-    } catch { /* not logged in — play without persistence */ }
 
     const openingLength = {
       short:  "3-4 sentences",
@@ -685,8 +721,7 @@ Provide 2-5 meaningfully different choices.`;
       `End with 2-5 meaningful choices.`
     }];
 
-    const persistOpts = sid ? { story_id: sid, turn_number: 0, user_content: "Begin the adventure." } : {};
-    const result = await callAPI(firstMessage, persistOpts);
+    const result = await callAPI(firstMessage);
     setStoryLog([{ role: "narrator", text: result.story }]);
     setChoices(result.choices || []);
     if (result.stats && config.trackStats) setStats(result.stats);
@@ -805,8 +840,7 @@ Provide 2-5 meaningfully different choices.`;
       history.push({ role: "user", content: lastMsg });
     }
 
-    const persistOpts = storyId ? { story_id: storyId, turn_number: turnCount, user_content: effectiveChoice ?? choiceText } : {};
-    const result = await callAPI(history, persistOpts);
+    const result = await callAPI(history);
 
     setStoryLog(prev => [...prev, { role: "narrator", text: result.story }]);
     setChoices(result.choices || []);
@@ -859,10 +893,11 @@ Provide 2-5 meaningfully different choices.`;
   };
 
   const resetGame = () => {
-    setPhase("setup"); setSetupStep(0); setStoryLog([]); setChoices([]);
+    setPhase("home"); setSetupStep(0); setStoryLog([]); setChoices([]);
     setStats({ health: 100, inventory: [], relationships: {} });
-    setGameOver(false); setTurnCount(0); setCustomAction(""); setStoryId(null);
+    setGameOver(false); setTurnCount(0); setCustomAction("");
     setCharacter({ name: "", gender: "", age: "", appearance: "", skills: [] });
+    setConfig({ genre: "", language: "English", ageTier: "", responseLength: "", storyLength: 15, deathPossible: null, trackStats: null, perspective: "second", storyPrompt: "" });
     setStorySummary({ narrative: "", world: null });
     setChapterNumber(1); setChapterBrief(null); setChapterBanner(null);
     setPendingRoll(null); setNextRollRequired({ required: false, context: "" });
@@ -895,7 +930,6 @@ Provide 2-5 meaningfully different choices.`;
         setChoices(save.choices || []);
         setTurnCount(save.turnCount || 0);
         setGameOver(save.gameOver || false);
-        setStoryId(null);
         setStorySummary(save.storySummary || { narrative: "", world: null });
         setChapterNumber(save.chapterNumber || 1);
         setChapterBrief(save.chapterBrief || null);
@@ -904,8 +938,8 @@ Provide 2-5 meaningfully different choices.`;
         setNextRollRequired({ required: false, context: "" });
         setChapterProgress(save.chapterProgress || { achieved: [], clues: [] });
         setPhase("game");
-      } catch {
-        alert(t("loadError"));
+      } catch (err) {
+        alert(err?.message === "version" ? t("versionError") : t("loadError"));
       }
     };
     reader.readAsText(file);
@@ -927,7 +961,7 @@ Provide 2-5 meaningfully different choices.`;
                   style={{ textAlign: "center", fontSize: 16 }}>{l.label}</OptionButton>
               ))}
             </div>
-            <NavButtons {...nav} onNext={() => setSetupStep(1)} canNext={!!config.language} showBack={false} />
+            <NavButtons {...nav} onBack={() => setPhase("home")} onNext={() => setSetupStep(1)} canNext={!!config.language} />
           </SetupCard>
         );
 
@@ -1438,6 +1472,122 @@ Provide 2-5 meaningfully different choices.`;
         )}
 
         <div style={{ position: "relative", zIndex: 1 }}>
+
+          {/* ── Key setup screen ── */}
+          {phase === "keySetup" && (
+            <div style={{ maxWidth: 500, margin: "0 auto" }}>
+              <div style={{ textAlign: "center", marginBottom: 32 }}>
+                <h1 style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 28, margin: "0 0 8px", letterSpacing: 2, textShadow: `0 0 40px ${theme.primary}30` }}>
+                  🗝️ {t("keySetupTitle")}
+                </h1>
+              </div>
+              <div style={{
+                background: theme.bgCard, backdropFilter: "blur(20px)", border: `1px solid ${theme.border}`,
+                borderRadius: 16, padding: "32px 36px", boxShadow: "0 10px 40px rgba(0,0,0,0.3)",
+              }}>
+                <p style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 13, lineHeight: 1.6, marginTop: 0 }}>
+                  {t("keySetupSub")}
+                </p>
+
+                {/* How-to steps */}
+                <div style={{ background: `${theme.border}30`, borderRadius: 10, padding: "16px 20px", marginBottom: 20 }}>
+                  <p style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 12, textTransform: "uppercase", letterSpacing: 1.5, margin: "0 0 10px" }}>
+                    {t("keyHowTo")}
+                  </p>
+                  {[t("keyStep1"), t("keyStep2"), t("keyStep3"), t("keyStep4")].map((step, i) => (
+                    <div key={i} style={{ fontFamily: theme.body, color: theme.text, fontSize: 12, marginBottom: 6, display: "flex", gap: 8, alignItems: "flex-start" }}>
+                      <span style={{ color: theme.primary, fontWeight: 700, flexShrink: 0 }}>{i + 1}.</span>
+                      <span>{step}{i === 0 ? (
+                        <> — <a href="https://aistudio.google.com" target="_blank" rel="noopener noreferrer" style={{ color: theme.primary }}>aistudio.google.com</a></>
+                      ) : null}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <input
+                  type="text"
+                  value={keyInput}
+                  onChange={e => { setKeyInput(e.target.value); setKeyError(""); }}
+                  onKeyDown={e => e.key === "Enter" && !keyValidating && handleValidateKey()}
+                  placeholder={t("keyPlaceholder")}
+                  style={{ ...inputStyle(theme), width: "100%", marginBottom: 10 }}
+                  autoFocus
+                />
+                {keyError && (
+                  <div style={{ fontFamily: theme.body, color: theme.accent, fontSize: 13, marginBottom: 10 }}>
+                    ⚠ {t("keyError")}: {keyError}
+                  </div>
+                )}
+                <button
+                  onClick={handleValidateKey}
+                  disabled={keyValidating || !keyInput.trim()}
+                  style={{
+                    width: "100%", padding: "12px 0", borderRadius: 8, border: "none",
+                    background: keyInput.trim() && !keyValidating ? theme.primary : `${theme.border}55`,
+                    color: keyInput.trim() && !keyValidating ? theme.bg : theme.textMuted,
+                    fontFamily: theme.heading, fontSize: 15, fontWeight: 700, cursor: keyInput.trim() && !keyValidating ? "pointer" : "not-allowed",
+                    letterSpacing: 1, textTransform: "uppercase", transition: "all 0.2s",
+                  }}
+                >
+                  {keyValidating ? t("keyValidating") : t("keyValidate")}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Home screen ── */}
+          {phase === "home" && (
+            <div style={{ maxWidth: 500, margin: "0 auto" }}>
+              <div style={{ textAlign: "center", marginBottom: 36 }}>
+                <h1 style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 36, margin: "0 0 8px", letterSpacing: 2, textShadow: `0 0 40px ${theme.primary}30` }}>
+                  ⚔️ {t("homeTitle")}
+                </h1>
+                <GenreIconStrip theme={THEMES.fantasy} />
+              </div>
+              <div style={{
+                background: theme.bgCard, backdropFilter: "blur(20px)", border: `1px solid ${theme.border}`,
+                borderRadius: 16, padding: "32px 36px", boxShadow: "0 10px 40px rgba(0,0,0,0.3)",
+                display: "flex", flexDirection: "column", gap: 14,
+              }}>
+                <button
+                  onClick={() => setPhase("setup")}
+                  style={{
+                    padding: "16px 0", borderRadius: 10, border: "none",
+                    background: theme.primary, color: theme.bg,
+                    fontFamily: theme.heading, fontSize: 16, fontWeight: 700,
+                    cursor: "pointer", letterSpacing: 1, textTransform: "uppercase", transition: "opacity 0.2s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = "0.85"; }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
+                >
+                  ✦ {t("startNew")}
+                </button>
+                <button
+                  onClick={handleLoadGame}
+                  style={{
+                    padding: "14px 0", borderRadius: 10, border: `1px solid ${theme.border}`,
+                    background: "transparent", color: theme.text,
+                    fontFamily: theme.heading, fontSize: 15, fontWeight: 700,
+                    cursor: "pointer", letterSpacing: 1, textTransform: "uppercase", transition: "border-color 0.2s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = theme.primary; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = theme.border; }}
+                >
+                  💾 {t("loadSaved")}
+                </button>
+                <div style={{ textAlign: "center", paddingTop: 8, borderTop: `1px solid ${theme.border}33` }}>
+                  <button
+                    onClick={() => { localStorage.removeItem("gemini_api_key"); setKeyInput(""); setPhase("keySetup"); }}
+                    style={{ background: "none", border: "none", color: theme.textMuted, fontFamily: theme.body, fontSize: 12, cursor: "pointer", textDecoration: "underline" }}
+                  >
+                    {t("changeKey")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Setup wizard ── */}
           {phase === "setup" && (
             <div style={{ maxWidth: 600, margin: "0 auto" }}>
               <div style={{ textAlign: "center", marginBottom: 32 }}>
@@ -1451,14 +1601,11 @@ Provide 2-5 meaningfully different choices.`;
                 <div style={{ width: "100%", height: 3, background: `${theme.border}55`, borderRadius: 2, marginTop: 16, overflow: "hidden" }}>
                   <div style={{ width: `${progress}%`, height: "100%", background: theme.primary, borderRadius: 2, transition: "width 0.4s ease", boxShadow: `0 0 10px ${theme.primary}60` }} />
                 </div>
-                <button onClick={handleLoadGame} style={{
-                  background: "transparent", border: "none", color: theme.textMuted, fontFamily: theme.body,
-                  fontSize: 13, cursor: "pointer", marginTop: 10, textDecoration: "underline", padding: 0,
-                }}>💾 {t("loadGameSub")}</button>
               </div>
               {renderSetupStep()}
             </div>
           )}
+
           {phase === "game" && renderGame()}
         </div>
       </div>
