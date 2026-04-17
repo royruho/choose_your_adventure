@@ -41,3 +41,5 @@ pytest_cache/
 # Claude Code
 .claude/
 .claude/settings.local.json
+.vercel
+.env*.local

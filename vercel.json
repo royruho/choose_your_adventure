@@ -2,9 +2,8 @@
   "framework": null,
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
-  "devCommand": "cd frontend && npm run dev -- --port 3000",
+  "devCommand": "cd frontend && npm run dev -- --port 5173",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

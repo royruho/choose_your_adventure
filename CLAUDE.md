@@ -8,138 +8,145 @@ This file tells Claude Code everything it needs to know to work effectively in t
 
 An AI-powered choose-your-own-adventure game with a chapter-based structure and dice-roll fate checks.
 
-- **Frontend**: React + Vite (`frontend/`) — **fully static** deployment, calls Gemini API directly from the browser. No backend required.
-- **Backend**: FastAPI (`app/`) — kept for potential future accounts feature, but **not used by the frontend**.
-- **AI**: Gemini 2.5 Flash (`gemini-2.5-flash`) via Google AI Studio free key. User provides their own key — stored in `localStorage`, never sent to a server.
+- **Frontend**: React + Vite (`frontend/`) — static, deployed on Vercel.
+- **Proxy**: Vercel serverless function (`api/proxy.js`) — holds the preloaded OpenRouter key server-side, never exposed to the browser.
+- **AI**: `openai/gpt-oss-20b:free` via OpenRouter. First 20 turns use the app's preloaded key (free to the player). Turn 20+ prompts the player to provide their own OpenRouter key.
 - **Save/Load**: File-based (JSON files on user's machine). No server-side persistence.
+- **Backend**: FastAPI (`app/`) — unused by the frontend, kept for a potential future accounts feature.
 
-### App flow
+### Freemium model
+
+```
+Turns 1–19  → frontend calls /api/proxy (server holds OPENROUTER_KEY, hidden from browser)
+Turn 20+    → modal prompts player for their own OpenRouter key
+            → stored in localStorage("openrouter_key"), used directly from browser
+```
+
+### App phases
 
 ```
 Load app
   ↓
-Check localStorage for "gemini_api_key"
-  ├── No key → keySetup screen (enter + validate key)
-  └── Key exists → home screen
-        ├── Start New Adventure → setup wizard → game
-        └── Load Saved Adventure → file picker → game
+phase = "home"  (no login/key required to start)
+  ├── Start New Adventure → phase = "setup" → phase = "game"
+  └── Load Saved Adventure → file picker → phase = "game"
+
+At turn 20, if no user key: modal overlay → enter OpenRouter key → continue game
 ```
 
-Phase progression: `"keySetup"` → `"home"` → `"setup"` → `"game"`
+Phase progression: `"home"` → `"setup"` → `"game"`
 
 ---
 
 ## Repository layout
 
 ```
-app/
-  main.py         FastAPI app, CORS, lifespan LLM startup check
-  db_api.py       All API routes: auth, LLM proxy, story CRUD, LLM config + retry logic
-  auth.py         JWT creation and verification, bcrypt password hashing
-  models.py       SQLAlchemy models: User, Story, StoryPart
-  crud.py         Database operations
-  db.py           Engine setup — supports both SQLite and PostgreSQL
+api/
+  proxy.js        Vercel serverless function — proxies LLM calls using server-side OPENROUTER_KEY
+  dev-server.js   Local dev only — runs proxy.js on port 3001 (not deployed)
 
 frontend/
   src/
     adventure.jsx  Entire game UI — setup wizard, gameplay, all state
-    api.js         Direct Gemini client — api.chat() and api.validateKey(). Key read from localStorage.
-  Dockerfile       Node 20 Alpine, Vite dev server on port 5173
+    api.js         LLM client — routes turns 1-19 through /api/proxy, turn 20+ uses user's own key
+  vite.config.js  Proxies /api/* → localhost:3001 in dev mode
 
-alembic/          Database migrations
-Dockerfile        Python 3.11 slim, Uvicorn on port 8000
-docker-compose.yml  Orchestrates backend + frontend locally
-.env.example      Template for required environment variables
-deployment.md     Step-by-step local Docker + cloud deployment guide
+package.json      Minimal root package.json (required for Vercel function detection)
+vercel.json       Build config + SPA catch-all rewrite
+
+app/              FastAPI backend — unused, kept for future accounts feature
 ```
 
 ---
 
-## Running locally
+## Running locally (dev mode)
 
+Two terminals required:
+
+**Terminal 1 — proxy server** (loads `.env`, serves the OpenRouter key on port 3001):
 ```bash
-cp .env.example .env        # fill in LLM_API_KEY at minimum
-docker compose up --build
-docker compose exec backend alembic upgrade head   # first run only
+node api/dev-server.js
 ```
 
-- Frontend: http://localhost:5173
-- Backend API docs: http://localhost:8000/docs
-- Backend health: http://localhost:8000/api/health
+**Terminal 2 — frontend** (Vite on 5173, proxies /api/* to 3001):
+```bash
+cd frontend
+npm run dev
+```
+
+Open `http://localhost:5173`. The game works exactly as in production:
+- Turns 1–19 call `POST /api/proxy` → forwarded to OpenRouter using `.env` key
+- Turn 20+ shows the user-key modal
+
+**Local environment variables (`.env` at repo root, gitignored):**
+
+| Variable | Description |
+|---|---|
+| `OPENROUTER_KEY` | Your OpenRouter API key (`sk-or-v1-...`) |
+
+---
+
+## Deploying to Vercel (prod mode)
+
+### One-time setup
+
+1. Push repo to GitHub
+2. Import project in Vercel dashboard — **leave Root Directory blank**
+3. Vercel auto-detects `vercel.json` and uses:
+   - Build: `cd frontend && npm install && npm run build`
+   - Output: `frontend/dist`
+4. Add environment variable in Vercel dashboard → **Settings → Environment Variables**:
+   - `OPENROUTER_KEY` = `sk-or-v1-...` (mark as Production + Preview)
+5. Deploy
+
+### Re-deploying after code changes
+
+```bash
+git add .
+git commit -m "your message"
+git push
+```
+Vercel auto-deploys on every push to `main`.
+
+### How prod routing works
+
+```
+https://choose-your-adventure*.vercel.app/
+  /api/proxy  → api/proxy.js (serverless function, reads OPENROUTER_KEY from env)
+  /*          → frontend/dist/index.html (SPA catch-all via vercel.json rewrite)
+```
+
+The `OPENROUTER_KEY` is **only ever accessible inside the serverless function** — it is never sent to the browser. The browser calls `/api/proxy` with the game messages; the function adds the key before forwarding to OpenRouter.
+
+### CORS
+
+`isAllowedOrigin()` in `proxy.js` allows:
+- `http://localhost:5173` — local dev
+- Any `https://choose-your-adventure*.vercel.app` — all preview + production deployments
+- `process.env.ALLOWED_ORIGIN` — optional override for a custom domain
+
+If you add a custom domain, set `ALLOWED_ORIGIN=https://yourdomain.com` in Vercel env vars.
 
 ---
 
 ## Environment variables
 
-**Backend (`.env`)**
-
-| Variable | Description | Example |
+| Variable | Where set | Description |
 |---|---|---|
-| `LLM_ENDPOINT` | LLM API URL | `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` |
-| `LLM_API_KEY` | API key | `AIza...` (Gemini) or `gsk_...` (Groq) |
-| `LLM_MODEL` | Model name | `gemini-2.5-flash` |
-| `LLM_MAX_TOKENS` | Max output tokens per call | `2000` |
-| `SECRET_KEY` | JWT signing secret | any long random string |
-| `DATABASE_URL` | DB connection string | `sqlite:///./stories.db` |
-| `CORS_ORIGINS` | Comma-separated allowed origins | `http://localhost:5173` |
-
-**Frontend (`frontend/.env`)**
-
-| Variable | Description | Default |
-|---|---|---|
-| `VITE_API_URL` | Backend URL | `http://localhost:8000` |
+| `OPENROUTER_KEY` | `.env` (local) / Vercel dashboard (prod) | OpenRouter API key — server-side only, never in frontend |
+| `ALLOWED_ORIGIN` | Vercel dashboard (optional) | Extra allowed CORS origin for custom domains |
 
 ---
 
-## Supported LLM providers
+## Vercel serverless function: api/proxy.js
 
-The backend auto-detects the provider from the endpoint URL:
+POST `/api/proxy` — the only server-side route. Accepts the same body that OpenRouter expects (minus the model, which is locked server-side).
 
-| Provider | Endpoint | Notes |
-|---|---|---|
-| Gemini | `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` | **Recommended** — free, 1M TPM. Use `gemini-2.5-flash`. |
-| Groq | `https://api.groq.com/openai/v1/chat/completions` | Free but 6K TPM — rate limits during active play |
-| Anthropic | `https://api.anthropic.com/v1/messages` | Paid |
-
-LLM config can be changed at runtime via `POST /api/config/llm`.
-
-**Gemini-specific**: `_is_gemini(endpoint)` detects Gemini endpoints. When detected, `reasoning_effort: "none"` is added to the request body to disable internal thinking — thinking tokens compete with output tokens and can truncate the JSON response. `gemini-2.0-flash` has zero free-tier quota in some regions (e.g. Israel); use `gemini-2.5-flash` instead.
-
-**Rate limit handling** (`app/db_api.py`): on HTTP 429, the backend parses the `"try again in Xs"` message from the error body, sleeps that duration + 1 s, and retries up to 2 times transparently. After 3 failures it returns a clean 429 to the client.
-
-**JSON extraction** (`app/db_api.py`): after stripping markdown fences, if `json.loads` fails a regex extracts the first `{...}` block from the raw text. This handles preamble/postamble text that some models add around JSON.
-
----
-
-## Key backend routes
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| GET | `/api/health` | — | Health check |
-| GET | `/api/config/llm` | — | Current LLM config (key masked) |
-| POST | `/api/config/llm` | — | Update LLM config at runtime |
-| POST | `/api/llm/chat` | optional | LLM proxy — all game calls go here |
-| POST | `/api/auth/register` | — | Register user, returns JWT |
-| POST | `/api/auth/login` | — | Login, returns JWT |
-| GET | `/api/auth/me` | required | Current user info |
-| POST | `/api/stories` | required | Create a story record |
-| GET | `/api/stories` | required | List user's stories |
-| GET | `/api/stories/{id}` | required | Story + all parts |
-| DELETE | `/api/stories/{id}` | required | Delete story |
-
----
-
-## Database models
-
-```
-User          id, username, hashed_password
-Story         id, title, owner_id, created_at, config (JSON), character (JSON)
-StoryPart     id, story_id, turn_number, sender, content, stats (JSON), created_at
-```
-
-`config` stores: genre, language, ageTier, responseLength, storyLength, deathPossible, trackStats, perspective, storyPrompt  
-`character` stores: name, gender, age, appearance, skills  
-`stats` stores: health (0–100), inventory (array), relationships (object)
+- Validates `Content-Type: application/json` and `messages` array
+- Locks model to `openai/gpt-oss-20b:free` — caller cannot override
+- Caps `max_completion_tokens` at 2000
+- CORS-restricted to allowed origins only
+- Returns the raw OpenRouter response (pass-through)
 
 ---
 
