@@ -23,10 +23,17 @@ function parseRetryAfter(body) {
 
 function extractJSON(raw) {
   if (!raw) return null;
-  const clean = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+  // Strip reasoning blocks and code fences
+  const clean = raw
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/```json/g, "").replace(/```/g, "").trim();
   try { return JSON.parse(clean); } catch { /* fall through */ }
-  const m = clean.match(/\{[\s\S]*\}/);
-  if (m) { try { return JSON.parse(m[0]); } catch { /* fall through */ } }
+  // Slice from first { to last } and try again
+  const start = clean.indexOf("{");
+  const end   = clean.lastIndexOf("}");
+  if (start !== -1 && end > start) {
+    try { return JSON.parse(clean.slice(start, end + 1)); } catch { /* fall through */ }
+  }
   return null;
 }
 
