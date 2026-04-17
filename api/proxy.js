@@ -3,14 +3,12 @@ const OPENROUTER_MODEL    = "google/gemini-2.0-flash-exp:free";
 const MAX_TOKENS_CAP      = 2000;
 const MAX_TURNS_FREE      = 20;
 
-const ALLOWED_ORIGINS = [
-  "https://choose-your-adventure-ten.vercel.app",
-  "https://choose-your-adventure-mfvn6loys-open-adventure.vercel.app",
-  "http://localhost:5173",
-];
-
-if (process.env.ALLOWED_ORIGIN) {
-  ALLOWED_ORIGINS.push(process.env.ALLOWED_ORIGIN);
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  if (origin === "http://localhost:5173") return true;
+  if (process.env.ALLOWED_ORIGIN && origin === process.env.ALLOWED_ORIGIN) return true;
+  // Allow any Vercel preview/production deployment for this project
+  return /^https:\/\/choose-your-adventure[a-z0-9-]*\.vercel\.app$/.test(origin);
 }
 
 module.exports = async function handler(req, res) {
@@ -21,8 +19,7 @@ module.exports = async function handler(req, res) {
 
   // CORS — only our own domain
   const origin = req.headers.origin || "";
-  const allowed = ALLOWED_ORIGINS.some(o => origin === o);
-  if (!allowed) {
+  if (!isAllowedOrigin(origin)) {
     return res.status(403).json({ error: "Forbidden" });
   }
   res.setHeader("Access-Control-Allow-Origin", origin);
