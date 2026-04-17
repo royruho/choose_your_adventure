@@ -49,9 +49,13 @@ module.exports = async function handler(req, res) {
   );
   body.model = OPENROUTER_MODEL;
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25000);
+
   try {
     const upstream = await fetch(OPENROUTER_ENDPOINT, {
       method:  "POST",
+      signal:  controller.signal,
       headers: {
         "Authorization": `Bearer ${key}`,
         "Content-Type":  "application/json",
@@ -64,6 +68,11 @@ module.exports = async function handler(req, res) {
     const data = await upstream.json();
     return res.status(upstream.status).json(data);
   } catch (err) {
+    if (err.name === "AbortError") {
+      return res.status(504).json({ error: "Model response timed out — please try again." });
+    }
     return res.status(502).json({ error: "Upstream error" });
+  } finally {
+    clearTimeout(timeout);
   }
 };

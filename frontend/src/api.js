@@ -102,15 +102,15 @@ async function callViaProxy(system, messages, opts) {
       body:    JSON.stringify(body),
     });
 
-    if (resp.status === 429 || resp.status === 503) {
+    if (resp.status === 429 || resp.status === 503 || resp.status === 504) {
       if (attempt < MAX_RETRIES) {
-        let waitBody = null;
-        try { waitBody = await resp.json(); } catch { /* ignore */ }
-        const wait = resp.status === 429 ? parseRetryAfter(waitBody) * 1000 : 4000 * (attempt + 1);
+        const wait = resp.status === 429 ? 6000 : 4000 * (attempt + 1);
         await new Promise(r => setTimeout(r, wait));
         continue;
       }
-      throw new Error("Rate limit reached — please try again in a moment.");
+      throw new Error(resp.status === 429
+        ? "Rate limit reached — please try again in a moment."
+        : "Model is slow right now — please try again.");
     }
 
     if (!resp.ok) {
