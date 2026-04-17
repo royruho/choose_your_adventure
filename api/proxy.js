@@ -1,5 +1,5 @@
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
-const OPENROUTER_MODEL    = "google/gemini-2.0-flash-exp:free";
+const OPENROUTER_MODEL    = "openai/gpt-oss-20b:free";
 const MAX_TOKENS_CAP      = 2000;
 const MAX_TURNS_FREE      = 20;
 
