@@ -12,7 +12,7 @@ if (process.env.ALLOWED_ORIGIN) {
   ALLOWED_ORIGINS.push(process.env.ALLOWED_ORIGIN);
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Only POST allowed
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
