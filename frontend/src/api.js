@@ -1,5 +1,5 @@
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
-const OPENROUTER_MODEL    = "openai/gpt-oss-20b:free";
+const OPENROUTER_MODEL    = "google/gemini-2.0-flash-001";
 export const FREE_TURN_LIMIT = 20;
 
 // ─── User key (stored in localStorage after turn 20) ────────────
