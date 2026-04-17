@@ -24,6 +24,16 @@ module.exports = async function handler(req, res) {
     return res.status(204).end();
   }
 
+  // Temporary debug — remove after confirming key is set
+  if (req.method === "GET") {
+    const k = process.env.OPENROUTER_KEY || "";
+    return res.status(200).json({
+      keySet: k.length > 0,
+      keyLength: k.length,
+      keyPrefix: k.length > 6 ? k.slice(0, 6) + "..." : "(empty)",
+    });
+  }
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
