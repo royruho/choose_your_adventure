@@ -117,6 +117,12 @@ const TR = {
   loadSaved:        { English: "Load Saved Adventure", Hebrew: "טען הרפתקה שמורה", Arabic: "تحميل مغامرة محفوظة" },
   loadSavedSub:     { English: "Resume from a .json save file", Hebrew: "המשך מקובץ שמירה .json", Arabic: "استئناف من ملف حفظ .json" },
   versionError:     { English: "This save file was created with an incompatible version of the app and cannot be loaded.", Hebrew: "קובץ השמירה נוצר עם גרסה לא תואמת של האפליקציה ולא ניתן לטעון אותו.", Arabic: "تم إنشاء ملف الحفظ هذا بإصدار غير متوافق من التطبيق ولا يمكن تحميله." },
+  quitGame:         { English: "Quit Game", Hebrew: "עזוב משחק", Arabic: "إنهاء اللعبة" },
+  addYourKey:       { English: "Add Your Key", Hebrew: "הוסף מפתח", Arabic: "أضف مفتاحك" },
+  unlimitedTurns:   { English: "Unlimited turns", Hebrew: "תורות ללא הגבלה", Arabic: "دورات غير محدودة" },
+  freeTurnsInfo:    { English: "{n} free turns included · no sign-up needed", Hebrew: "{n} תורות חינמיות כלולות · ללא הרשמה", Arabic: "يشمل {n} دورات مجانية · لا حاجة للتسجيل" },
+  keyModalSubHome:  { English: "Add a free OpenRouter key to play without limits — sign up takes 2 minutes, no credit card.", Hebrew: "הוסף מפתח OpenRouter חינמי למשחק ללא הגבלות — ההרשמה לוקחת 2 דקות, ללא כרטיס אשראי.", Arabic: "أضف مفتاح OpenRouter المجاني للعب بدون قيود — التسجيل يستغرق دقيقتين، بدون بطاقة ائتمان." },
+  turnsLeft:        { English: "{n} free turns left", Hebrew: "נשארו {n} תורות חינמיות", Arabic: "تبقّى {n} دورات مجانية" },
 };
 
 // ─── THEMES ────────────────────────────────────────────────────
@@ -386,6 +392,58 @@ function NavButtons({ theme, onBack, onNext, canNext = true, nextLabel, backLabe
   );
 }
 
+function SidebarActions({ theme, t, turnCount, isRTL, onSave, onExport, onQuit, onKey }) {
+  const userHasKey = hasUserKey();
+  const free = FREE_TURN_LIMIT;
+  const remaining = Math.max(0, free - turnCount);
+  const btn = {
+    display: "block", width: "100%", background: "transparent",
+    border: `1px solid ${theme.border}`, borderRadius: 6, padding: "6px 10px",
+    color: theme.textMuted, fontFamily: theme.heading, fontSize: 11,
+    cursor: "pointer", letterSpacing: 0.5, textAlign: isRTL ? "right" : "left",
+    transition: "all 0.2s", marginBottom: 5,
+  };
+  return (
+    <div style={{ marginTop: 16, paddingTop: 14, borderTop: `1px solid ${theme.border}33` }}>
+      {/* Turn counter */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <span style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>
+          {t("turn")} {turnCount}
+        </span>
+        <span style={{
+          fontFamily: theme.body, fontSize: 11, fontWeight: 700,
+          color: userHasKey ? (theme.secondary || "#4A7C3F") : remaining <= 3 ? theme.accent : theme.primary,
+        }}>
+          {userHasKey ? "∞" : `${remaining} / ${free}`}
+        </span>
+      </div>
+      {/* Action buttons */}
+      <button style={btn} onClick={onSave}
+        onMouseOver={e => { e.currentTarget.style.borderColor = theme.primary; e.currentTarget.style.color = theme.primary; }}
+        onMouseOut={e  => { e.currentTarget.style.borderColor = theme.border;  e.currentTarget.style.color = theme.textMuted; }}>
+        💾 {t("saveGame")}
+      </button>
+      <button style={btn} onClick={onExport}
+        onMouseOver={e => { e.currentTarget.style.borderColor = theme.primary; e.currentTarget.style.color = theme.primary; }}
+        onMouseOut={e  => { e.currentTarget.style.borderColor = theme.border;  e.currentTarget.style.color = theme.textMuted; }}>
+        📄 {t("exportStory")}
+      </button>
+      <button style={btn} onClick={onKey}
+        onMouseOver={e => { e.currentTarget.style.borderColor = theme.primary; e.currentTarget.style.color = theme.primary; }}
+        onMouseOut={e  => { e.currentTarget.style.borderColor = theme.border;  e.currentTarget.style.color = theme.textMuted; }}>
+        🗝️ {userHasKey ? t("changeKey") : t("addYourKey")}
+      </button>
+      <button
+        style={{ ...btn, marginBottom: 0, borderColor: `${theme.accent}50`, color: theme.accent }}
+        onClick={onQuit}
+        onMouseOver={e => { e.currentTarget.style.borderColor = theme.accent; e.currentTarget.style.opacity = "0.8"; }}
+        onMouseOut={e  => { e.currentTarget.style.borderColor = `${theme.accent}50`; e.currentTarget.style.opacity = "1"; }}>
+        🚪 {t("quitGame")}
+      </button>
+    </div>
+  );
+}
+
 function inputStyle(theme) {
   return {
     width: "100%", background: `${theme.bg}88`, border: `1px solid ${theme.border}`,
@@ -493,10 +551,12 @@ export default function AdventureGame() {
   // Chapter progress — tracks partial goal completion within current chapter
   const [chapterProgress, setChapterProgress] = useState({ achieved: [], clues: [] });
 
-  const [showKeyModal, setShowKeyModal] = useState(false);
-  const [keyInput, setKeyInput]         = useState("");
-  const [keyError, setKeyError]         = useState("");
+  const [showKeyModal, setShowKeyModal]   = useState(false);
+  const [keyModalContext, setKeyModalContext] = useState("game"); // "home" | "game"
+  const [keyInput, setKeyInput]           = useState("");
+  const [keyError, setKeyError]           = useState("");
   const [keyValidating, setKeyValidating] = useState(false);
+  const [showHomeKeyHelp, setShowHomeKeyHelp] = useState(false);
 
   const storyEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -612,6 +672,7 @@ Provide 2-5 meaningfully different choices.`;
       return await api.chat(buildSystemPrompt(), messages, { ...opts, turnCount });
     } catch (err) {
       if (err.message === "__need_key__") {
+        setKeyModalContext("game");
         setShowKeyModal(true);
         return null; // caller must handle null
       }
@@ -1362,12 +1423,27 @@ Provide 2-5 meaningfully different choices.`;
         )}
       </div>
 
+      {/* Minimal sidebar — shown when no stats and no chapter progress yet */}
+      {!config.trackStats && !(chapterBrief && (chapterProgress.achieved.length > 0 || chapterProgress.clues.length > 0)) && (
+        <div style={{
+          width: 190, flexShrink: 0, background: theme.bgCard, backdropFilter: "blur(20px)",
+          border: `1px solid ${theme.border}`, borderRadius: 16, padding: "18px 14px", alignSelf: "flex-start",
+          position: "sticky", top: 20, boxShadow: "0 10px 40px rgba(0,0,0,0.2)", textAlign: isRTL ? "right" : "left",
+        }}>
+          <SidebarActions theme={theme} t={t} turnCount={turnCount} isRTL={isRTL}
+            onSave={handleSaveGame} onExport={handleExport} onQuit={resetGame}
+            onKey={() => { setKeyModalContext("game"); setShowKeyModal(true); setKeyInput(""); setKeyError(""); }}
+          />
+        </div>
+      )}
+
       {/* Chapter progress sidebar — shown when stats are off but chapters are active */}
       {!config.trackStats && chapterBrief && (chapterProgress.achieved.length > 0 || chapterProgress.clues.length > 0) && (
         <div style={{
           width: 190, flexShrink: 0, background: theme.bgCard, backdropFilter: "blur(20px)",
           border: `1px solid ${theme.border}`, borderRadius: 16, padding: "18px 14px", alignSelf: "flex-start",
           position: "sticky", top: 20, boxShadow: "0 10px 40px rgba(0,0,0,0.2)", textAlign: isRTL ? "right" : "left",
+          display: "flex", flexDirection: "column",
         }}>
           <h3 style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 12, textTransform: "uppercase", letterSpacing: 1.5, margin: "0 0 12px" }}>
             {t("chapterLabel")} Progress
@@ -1378,6 +1454,10 @@ Provide 2-5 meaningfully different choices.`;
           {chapterProgress.clues.map((c, i) => (
             <div key={i} style={{ fontFamily: theme.body, fontSize: 10, marginBottom: 4, color: theme.primary, opacity: 0.75, fontStyle: "italic" }}>💡 {c}</div>
           ))}
+          <SidebarActions theme={theme} t={t} turnCount={turnCount} isRTL={isRTL}
+            onSave={handleSaveGame} onExport={handleExport} onQuit={resetGame}
+            onKey={() => { setKeyModalContext("game"); setShowKeyModal(true); setKeyInput(""); setKeyError(""); }}
+          />
         </div>
       )}
 
@@ -1387,6 +1467,7 @@ Provide 2-5 meaningfully different choices.`;
           width: 200, flexShrink: 0, background: theme.bgCard, backdropFilter: "blur(20px)",
           border: `1px solid ${theme.border}`, borderRadius: 16, padding: "20px 16px", alignSelf: "flex-start",
           position: "sticky", top: 20, boxShadow: "0 10px 40px rgba(0,0,0,0.2)", textAlign: isRTL ? "right" : "left",
+          display: "flex", flexDirection: "column",
         }}>
           <h3 style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 13, textTransform: "uppercase", letterSpacing: 1.5, margin: "0 0 16px" }}>{t("stats")}</h3>
           <div style={{ marginBottom: 16 }}>
@@ -1428,6 +1509,10 @@ Provide 2-5 meaningfully different choices.`;
               ))}
             </div>
           )}
+          <SidebarActions theme={theme} t={t} turnCount={turnCount} isRTL={isRTL}
+            onSave={handleSaveGame} onExport={handleExport} onQuit={resetGame}
+            onKey={() => { setKeyModalContext("game"); setShowKeyModal(true); setKeyInput(""); setKeyError(""); }}
+          />
         </div>
       )}
     </div>
@@ -1520,18 +1605,60 @@ Provide 2-5 meaningfully different choices.`;
                 >
                   💾 {t("loadSaved")}
                 </button>
-                <div style={{ textAlign: "center", paddingTop: 8, borderTop: `1px solid ${theme.border}33` }}>
+                {/* Key / free-turns section */}
+                <div style={{ paddingTop: 12, borderTop: `1px solid ${theme.border}33` }}>
                   {hasUserKey() ? (
-                    <button
-                      onClick={() => { clearUserKey(); setShowKeyModal(false); }}
-                      style={{ background: "none", border: "none", color: theme.textMuted, fontFamily: theme.body, fontSize: 12, cursor: "pointer", textDecoration: "underline" }}
-                    >
-                      🗝️ {t("changeKey")}
-                    </button>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontFamily: theme.body, color: theme.secondary || theme.primary, fontSize: 12 }}>
+                        🗝️ {t("unlimitedTurns")}
+                      </span>
+                      <button
+                        onClick={() => { clearUserKey(); }}
+                        style={{ background: "none", border: "none", color: theme.textMuted, fontFamily: theme.body, fontSize: 11, cursor: "pointer", textDecoration: "underline" }}
+                      >
+                        {t("changeKey")}
+                      </button>
+                    </div>
                   ) : (
-                    <span style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 12 }}>
-                      ✦ {t("freeTurnsLeft", { n: String(FREE_TURN_LIMIT) })} — no account needed
-                    </span>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                        <span style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 12 }}>
+                          ✦ {t("freeTurnsInfo", { n: String(FREE_TURN_LIMIT) })}
+                        </span>
+                        <button
+                          onClick={() => { setKeyModalContext("home"); setShowKeyModal(true); setKeyInput(""); setKeyError(""); }}
+                          style={{
+                            background: "none", border: `1px solid ${theme.primary}60`, borderRadius: 6,
+                            color: theme.primary, fontFamily: theme.heading, fontSize: 11,
+                            cursor: "pointer", padding: "3px 10px", letterSpacing: 0.5,
+                          }}
+                        >
+                          🗝️ {t("addYourKey")}
+                        </button>
+                      </div>
+                      {/* Help toggle */}
+                      <button
+                        onClick={() => setShowHomeKeyHelp(s => !s)}
+                        style={{ background: "none", border: "none", color: theme.textMuted, fontFamily: theme.body, fontSize: 11, cursor: "pointer", padding: 0, textDecoration: "underline" }}
+                      >
+                        {showHomeKeyHelp ? "▲" : "▼"} {t("keyHowTo")}
+                      </button>
+                      {showHomeKeyHelp && (
+                        <div style={{ marginTop: 10, background: `${theme.border}20`, borderRadius: 8, padding: "10px 12px" }}>
+                          {[
+                            { text: t("keyStep1"), link: "https://openrouter.ai" },
+                            { text: t("keyStep2") },
+                            { text: t("keyStep3") },
+                            { text: t("keyStep4") },
+                          ].map(({ text, link }, i) => (
+                            <div key={i} style={{ fontFamily: theme.body, color: theme.text, fontSize: 11, marginBottom: 5, display: "flex", gap: 8 }}>
+                              <span style={{ color: theme.primary, fontWeight: 700, flexShrink: 0 }}>{i + 1}.</span>
+                              <span>{link ? <><a href={link} target="_blank" rel="noopener noreferrer" style={{ color: theme.primary }}>openrouter.ai</a> — {text.replace(/^go to openrouter\.ai /i, "")}</> : text}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -1577,7 +1704,7 @@ Provide 2-5 meaningfully different choices.`;
               🗝️ {t("keyModalTitle")}
             </h2>
             <p style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 13, lineHeight: 1.7, marginTop: 0 }}>
-              {t("keyModalSub")}
+              {t(keyModalContext === "home" ? "keyModalSubHome" : "keyModalSub")}
             </p>
             <div style={{ background: `${theme.border}30`, borderRadius: 10, padding: "14px 18px", marginBottom: 18 }}>
               <p style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 11, textTransform: "uppercase", letterSpacing: 1.5, margin: "0 0 8px" }}>
