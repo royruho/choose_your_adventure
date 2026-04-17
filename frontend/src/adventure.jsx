@@ -1686,6 +1686,23 @@ Provide 2-5 meaningfully different choices.`;
 
           {phase === "game" && renderGame()}
         </div>
+
+        {/* Footer */}
+        <div style={{
+          textAlign: "center", padding: "24px 0 8px",
+          fontFamily: theme.body, fontSize: 11, color: theme.textMuted, opacity: 0.6,
+        }}>
+          Created by{" "}
+          <a
+            href="https://github.com/royruho/choose_your_adventure"
+            target="_blank" rel="noopener noreferrer"
+            style={{ color: theme.primary, textDecoration: "none", opacity: 0.8 }}
+            onMouseOver={e => e.currentTarget.style.opacity = "1"}
+            onMouseOut={e  => e.currentTarget.style.opacity = "0.8"}
+          >
+            Roy Ruach
+          </a>
+        </div>
       </div>
 
       {/* Key modal — shown when free turns are exhausted */}
