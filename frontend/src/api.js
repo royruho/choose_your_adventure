@@ -1,14 +1,20 @@
-const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-const GEMINI_MODEL    = "gemini-2.5-flash";
+const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
+const OPENROUTER_MODEL    = "google/gemini-2.0-flash-exp:free";
+export const FREE_TURN_LIMIT = 20;
 
-function getKey() {
-  return localStorage.getItem("gemini_api_key") || "";
-}
+// ─── User key (stored in localStorage after turn 20) ────────────
+
+export function getUserKey()          { return localStorage.getItem("openrouter_key") || ""; }
+export function saveUserKey(key)      { localStorage.setItem("openrouter_key", key.trim()); }
+export function clearUserKey()        { localStorage.removeItem("openrouter_key"); }
+export function hasUserKey()          { return !!getUserKey(); }
+
+// ─── Helpers ────────────────────────────────────────────────────
 
 function parseRetryAfter(body) {
   try {
     const msg = body?.error?.message || "";
-    const m = msg.match(/try again in (\d+\.?\d*)s/i) || msg.match(/retry.*?(\d+\.?\d*)\s*s/i);
+    const m = msg.match(/retry.*?(\d+\.?\d*)\s*s/i) || msg.match(/try again in (\d+\.?\d*)s/i);
     return m ? parseFloat(m[1]) + 1.0 : 6.0;
   } catch {
     return 6.0;
@@ -18,104 +24,133 @@ function parseRetryAfter(body) {
 function extractJSON(raw) {
   if (!raw) return null;
   const clean = raw.replace(/```json/g, "").replace(/```/g, "").trim();
-  try {
-    return JSON.parse(clean);
-  } catch {
-    const m = clean.match(/\{[\s\S]*\}/);
-    if (m) {
-      try { return JSON.parse(m[0]); } catch { /* fall through */ }
-    }
-    return null;
-  }
+  try { return JSON.parse(clean); } catch { /* fall through */ }
+  const m = clean.match(/\{[\s\S]*\}/);
+  if (m) { try { return JSON.parse(m[0]); } catch { /* fall through */ } }
+  return null;
 }
 
-async function geminiCall(system, messages, opts = {}) {
-  const key = getKey();
-  if (!key) throw new Error("No Gemini API key configured");
+// ─── Core call ──────────────────────────────────────────────────
 
-  const { max_tokens_override } = opts;
-  const maxTokens = max_tokens_override || 2000;
-
-  const openaiMessages = [{ role: "system", content: system }, ...messages];
+async function callWithKey(key, system, messages, opts) {
+  const maxTokens = Math.min(opts.max_tokens_override || 2000, 2000);
   const body = {
-    model: GEMINI_MODEL,
+    model:                 OPENROUTER_MODEL,
     max_completion_tokens: maxTokens,
-    messages: openaiMessages,
-    response_format: { type: "json_object" },
-    reasoning_effort: "none",
+    messages:              [{ role: "system", content: system }, ...messages],
+    response_format:       { type: "json_object" },
   };
 
   const MAX_RETRIES = 2;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    const resp = await fetch(GEMINI_ENDPOINT, {
-      method: "POST",
+    const resp = await fetch(OPENROUTER_ENDPOINT, {
+      method:  "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type":  "application/json",
         "Authorization": `Bearer ${key}`,
+        "HTTP-Referer":  window.location.origin,
+        "X-Title":       "Choose Your Adventure",
       },
       body: JSON.stringify(body),
     });
 
-    if (resp.status === 429) {
+    if (resp.status === 429 || resp.status === 503) {
       if (attempt < MAX_RETRIES) {
         let waitBody = null;
         try { waitBody = await resp.json(); } catch { /* ignore */ }
-        const wait = parseRetryAfter(waitBody) * 1000;
+        const wait = resp.status === 429 ? parseRetryAfter(waitBody) * 1000 : 4000 * (attempt + 1);
         await new Promise(r => setTimeout(r, wait));
         continue;
       }
-      throw new Error("Rate limit reached — please wait a moment and try again.");
-    }
-
-    if (resp.status === 503) {
-      if (attempt < MAX_RETRIES) {
-        await new Promise(r => setTimeout(r, 4000 * (attempt + 1)));
-        continue;
-      }
-      throw new Error("Gemini is temporarily overloaded — please try again in a few seconds.");
+      throw new Error(resp.status === 429
+        ? "Rate limit reached — please wait a moment and try again."
+        : "Service temporarily overloaded — please try again.");
     }
 
     if (!resp.ok) {
-      const errText = await resp.text().catch(() => resp.statusText);
-      throw new Error(`Gemini error ${resp.status}: ${errText}`);
+      const txt = await resp.text().catch(() => resp.statusText);
+      throw new Error(`API error ${resp.status}: ${txt}`);
     }
 
-    const data = await resp.json();
-    const raw = data?.choices?.[0]?.message?.content || "";
+    const data   = await resp.json();
+    const raw    = data?.choices?.[0]?.message?.content || "";
     const result = extractJSON(raw);
-    if (result) return result;
-
-    // Raw text returned but not valid JSON
-    return {
-      story: raw,
-      choices: [],
-      gameOver: false,
-      gameOverReason: "",
-    };
+    return result || { story: raw, choices: [], gameOver: false, gameOverReason: "" };
   }
 }
 
+async function callViaProxy(system, messages, opts) {
+  const maxTokens = Math.min(opts.max_tokens_override || 2000, 2000);
+  const body = {
+    max_completion_tokens: maxTokens,
+    messages:              [{ role: "system", content: system }, ...messages],
+    response_format:       { type: "json_object" },
+  };
+
+  const MAX_RETRIES = 2;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const resp = await fetch("/api/proxy", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(body),
+    });
+
+    if (resp.status === 429 || resp.status === 503) {
+      if (attempt < MAX_RETRIES) {
+        let waitBody = null;
+        try { waitBody = await resp.json(); } catch { /* ignore */ }
+        const wait = resp.status === 429 ? parseRetryAfter(waitBody) * 1000 : 4000 * (attempt + 1);
+        await new Promise(r => setTimeout(r, wait));
+        continue;
+      }
+      throw new Error("Rate limit reached — please try again in a moment.");
+    }
+
+    if (!resp.ok) {
+      const txt = await resp.text().catch(() => resp.statusText);
+      throw new Error(`Proxy error ${resp.status}: ${txt}`);
+    }
+
+    const data   = await resp.json();
+    const raw    = data?.choices?.[0]?.message?.content || "";
+    const result = extractJSON(raw);
+    return result || { story: raw, choices: [], gameOver: false, gameOverReason: "" };
+  }
+}
+
+// ─── Public API ─────────────────────────────────────────────────
+
 export const api = {
   /**
-   * Main game call — calls Gemini directly using key from localStorage.
-   * opts: { max_tokens_override }
+   * Main game call.
+   * turnCount < FREE_TURN_LIMIT → uses server proxy (key hidden).
+   * turnCount >= FREE_TURN_LIMIT → uses user's own OpenRouter key.
    */
-  chat: (system, messages, opts = {}) => geminiCall(system, messages, opts),
+  chat: (system, messages, opts = {}) => {
+    const userKey = getUserKey();
+    const turn    = opts.turnCount ?? FREE_TURN_LIMIT;
+    if (userKey || turn >= FREE_TURN_LIMIT) {
+      if (!userKey) throw new Error("__need_key__");
+      return callWithKey(userKey, system, messages, opts);
+    }
+    return callViaProxy(system, messages, opts);
+  },
 
   /**
-   * Validate a Gemini API key by sending a minimal test call.
-   * Resolves true on success, throws an Error with a human-readable message on failure.
+   * Validate an OpenRouter key before saving.
    */
   validateKey: async (key) => {
     if (!key?.trim()) throw new Error("Please enter an API key.");
-    const resp = await fetch(GEMINI_ENDPOINT, {
-      method: "POST",
+    const resp = await fetch(OPENROUTER_ENDPOINT, {
+      method:  "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type":  "application/json",
         "Authorization": `Bearer ${key.trim()}`,
+        "HTTP-Referer":  window.location.origin,
+        "X-Title":       "Choose Your Adventure",
       },
       body: JSON.stringify({
-        model: GEMINI_MODEL,
+        model:                 OPENROUTER_MODEL,
         max_completion_tokens: 5,
         messages: [
           { role: "system", content: "You are a test." },
@@ -123,11 +158,12 @@ export const api = {
         ],
       }),
     });
+
     if (resp.status === 401 || resp.status === 403) throw new Error("Invalid API key — check that you copied it correctly.");
     if (resp.status === 429) throw new Error("Key is valid but rate-limited right now — try again in a moment.");
     if (!resp.ok) {
       const txt = await resp.text().catch(() => "");
-      if (txt.includes("API_KEY_INVALID") || txt.includes("PERMISSION_DENIED"))
+      if (txt.includes("No API key") || txt.includes("invalid_api_key"))
         throw new Error("Invalid API key — check that you copied it correctly.");
       throw new Error(`Validation failed (${resp.status}) — check your key and try again.`);
     }

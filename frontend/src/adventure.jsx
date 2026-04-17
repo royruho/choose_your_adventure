@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { api } from "./api.js";
+import { api, saveUserKey, clearUserKey, hasUserKey, FREE_TURN_LIMIT } from "./api.js";
 
 // ─── TRANSLATIONS ───────────────────────────────────────────────
 const TR = {
@@ -97,19 +97,20 @@ const TR = {
   critSuccess:      { English: "Critical Success!", Hebrew: "הצלחה מוחלטת!" },
   skillBonusApplied:{ English: "Skill Bonus — rolled twice, kept highest", Hebrew: "בונוס כישור — הוטל פעמיים, נשמר הגבוה" },
   rollRequired:     { English: "Next action may require a fate check", Hebrew: "הפעולה הבאה עשויה לדרוש בדיקת גורל" },
-  // ── Key setup screen ──
-  keySetupTitle:    { English: "Enter your Gemini API Key", Hebrew: "הזן את מפתח ה-API של Gemini", Arabic: "أدخل مفتاح Gemini API" },
-  keySetupSub:      { English: "This app runs entirely in your browser. Your key is stored only on this device and never sent to any server except Google's Gemini API.", Hebrew: "האפליקציה פועלת לחלוטין בדפדפן שלך. המפתח מאוחסן רק במכשיר זה ולא נשלח לשום שרת מלבד Gemini API של Google.", Arabic: "يعمل هذا التطبيق بالكامل في متصفحك. يُخزَّن مفتاحك فقط على هذا الجهاز ولا يُرسَل إلى أي خادم سوى Gemini API من Google." },
-  keyPlaceholder:   { English: "Paste your Gemini key here (starts with AIza...)", Hebrew: "הדבק את מפתח ה-Gemini כאן (מתחיל ב-AIza...)", Arabic: "الصق مفتاح Gemini هنا (يبدأ بـ AIza...)" },
-  keyValidate:      { English: "Validate & Save", Hebrew: "אמת ושמור", Arabic: "تحقق واحفظ" },
+  // ── Key modal (shown at turn 20) ──
+  keyModalTitle:    { English: "Continue Your Adventure", Hebrew: "המשך את ההרפתקה שלך", Arabic: "تابع مغامرتك" },
+  keyModalSub:      { English: "You've used your 20 free turns. Add a free OpenRouter key to keep playing — takes 2 minutes.", Hebrew: "השתמשת ב-20 תורות החינמיות. הוסף מפתח OpenRouter חינמי כדי להמשיך — לוקח 2 דקות.", Arabic: "لقد استخدمت 20 دورة مجانية. أضف مفتاح OpenRouter مجاناً لمواصلة اللعب — يستغرق دقيقتين." },
+  keyPlaceholder:   { English: "Paste your OpenRouter key (starts with sk-or-...)", Hebrew: "הדבק את מפתח ה-OpenRouter (מתחיל ב-sk-or-...)", Arabic: "الصق مفتاح OpenRouter (يبدأ بـ sk-or-...)" },
+  keyValidate:      { English: "Validate & Continue", Hebrew: "אמת והמשך", Arabic: "تحقق وتابع" },
   keyValidating:    { English: "Validating...", Hebrew: "מאמת...", Arabic: "جارٍ التحقق..." },
-  keyHowTo:         { English: "How to get a free Gemini key", Hebrew: "איך מקבלים מפתח Gemini בחינם", Arabic: "كيف تحصل على مفتاح Gemini مجاناً" },
-  keyStep1:         { English: "Go to aistudio.google.com and sign in", Hebrew: "עבור אל aistudio.google.com והתחבר", Arabic: "انتقل إلى aistudio.google.com وسجّل الدخول" },
-  keyStep2:         { English: "Click \"Get API key\" → \"Create API key in new project\"", Hebrew: "לחץ על \"Get API key\" ← \"Create API key in new project\"", Arabic: "انقر على \"Get API key\" ← \"Create API key in new project\"" },
-  keyStep3:         { English: "Copy the key (starts with AIza) and paste it above", Hebrew: "העתק את המפתח (מתחיל ב-AIza) והדבק אותו למעלה", Arabic: "انسخ المفتاح (يبدأ بـ AIza) والصقه أعلاه" },
-  keyStep4:         { English: "Free tier: 1,500 requests/day, 1,000,000 tokens/min — no rate limits during play", Hebrew: "תוכנית חינמית: 1,500 בקשות ליום, 1,000,000 טוקנים לדקה — ללא הגבלת קצב במשחק", Arabic: "الطبقة المجانية: 1,500 طلب/يوم، مليون رمز/دقيقة — بلا قيود أثناء اللعب" },
+  keyHowTo:         { English: "How to get a free OpenRouter key", Hebrew: "איך מקבלים מפתח OpenRouter חינמי", Arabic: "كيف تحصل على مفتاح OpenRouter مجاناً" },
+  keyStep1:         { English: "Go to openrouter.ai and sign up (free, no credit card)", Hebrew: "עבור אל openrouter.ai והירשם (חינם, ללא כרטיס אשראי)", Arabic: "انتقل إلى openrouter.ai وسجّل (مجاني، بدون بطاقة)" },
+  keyStep2:         { English: "Go to Keys → Create Key", Hebrew: "עבור אל Keys ← Create Key", Arabic: "انتقل إلى Keys ← Create Key" },
+  keyStep3:         { English: "Copy the key (starts with sk-or-) and paste it above", Hebrew: "העתק את המפתח (מתחיל ב-sk-or-) והדבק אותו למעלה", Arabic: "انسخ المفتاح (يبدأ بـ sk-or-) والصقه أعلاه" },
+  keyStep4:         { English: "Free models available — no payment needed", Hebrew: "מודלים חינמיים זמינים — אין צורך בתשלום", Arabic: "نماذج مجانية متاحة — لا حاجة للدفع" },
   keyError:         { English: "Could not validate key", Hebrew: "לא ניתן לאמת את המפתח", Arabic: "تعذّر التحقق من المفتاح" },
   changeKey:        { English: "Change API key", Hebrew: "שנה מפתח API", Arabic: "تغيير مفتاح API" },
+  freeTurnsLeft:    { English: "{n} free turns remaining", Hebrew: "נשארו {n} תורות חינמיות", Arabic: "تبقّى {n} دورة مجانية" },
   // ── Home screen ──
   homeTitle:        { English: "Adventure Awaits", Hebrew: "הרפתקה מחכה", Arabic: "المغامرة تنتظر" },
   startNew:         { English: "Start New Adventure", Hebrew: "התחל הרפתקה חדשה", Arabic: "ابدأ مغامرة جديدة" },
@@ -470,8 +471,7 @@ function loadAndValidateSave(json) {
 
 // ─── MAIN APP ──────────────────────────────────────────────────
 export default function AdventureGame() {
-  const storedKey = typeof localStorage !== "undefined" ? localStorage.getItem("gemini_api_key") : "";
-  const [phase, setPhase]           = useState(storedKey ? "home" : "keySetup");
+  const [phase, setPhase]           = useState("home");
   const [setupStep, setSetupStep]   = useState(0);
   const [config, setConfig]         = useState({ genre: "", language: "English", ageTier: "", responseLength: "", storyLength: 15, deathPossible: null, trackStats: null, perspective: "second", storyPrompt: "" });
   const [character, setCharacter]   = useState({ name: "", gender: "", age: "", appearance: "", skills: [] });
@@ -493,6 +493,7 @@ export default function AdventureGame() {
   // Chapter progress — tracks partial goal completion within current chapter
   const [chapterProgress, setChapterProgress] = useState({ achieved: [], clues: [] });
 
+  const [showKeyModal, setShowKeyModal] = useState(false);
   const [keyInput, setKeyInput]         = useState("");
   const [keyError, setKeyError]         = useState("");
   const [keyValidating, setKeyValidating] = useState(false);
@@ -608,8 +609,12 @@ Provide 2-5 meaningfully different choices.`;
   // ─── API CALL ─────────────────────────────────────────────────
   const callAPI = useCallback(async (messages, opts = {}) => {
     try {
-      return await api.chat(buildSystemPrompt(), messages, opts);
+      return await api.chat(buildSystemPrompt(), messages, { ...opts, turnCount });
     } catch (err) {
+      if (err.message === "__need_key__") {
+        setShowKeyModal(true);
+        return null; // caller must handle null
+      }
       console.error("API error:", err);
       const errorMsg = lang === "Hebrew" ? "משהו השתבש... נסה שוב." : lang === "Arabic" ? "حدث خطأ... حاول مرة أخرى." : "Something went wrong... try again.";
       const retryMsg = lang === "Hebrew" ? "נסה שוב" : lang === "Arabic" ? "حاول مرة أخرى" : "Try again";
@@ -619,7 +624,7 @@ Provide 2-5 meaningfully different choices.`;
         gameOver: false, rollRequired: false, rollContext: "", chapterComplete: false,
       };
     }
-  }, [buildSystemPrompt, lang]);
+  }, [buildSystemPrompt, lang, turnCount]);
 
   // ─── BACKGROUND SUMMARIZER ─────────────────────────────────────
   const triggerSummarize = useCallback(async (fullLog, currentSummary) => {
@@ -689,9 +694,9 @@ Provide 2-5 meaningfully different choices.`;
     setKeyValidating(true);
     try {
       await api.validateKey(keyInput);
-      const trimmed = keyInput.trim();
-      localStorage.setItem("gemini_api_key", trimmed);
-      setPhase("home");
+      saveUserKey(keyInput);
+      setKeyInput("");
+      setShowKeyModal(false);
     } catch (err) {
       setKeyError(err.message);
     } finally {
@@ -722,6 +727,7 @@ Provide 2-5 meaningfully different choices.`;
     }];
 
     const result = await callAPI(firstMessage);
+    if (!result) { setLoading(false); return; } // key modal shown
     setStoryLog([{ role: "narrator", text: result.story }]);
     setChoices(result.choices || []);
     if (result.stats && config.trackStats) setStats(result.stats);
@@ -841,6 +847,7 @@ Provide 2-5 meaningfully different choices.`;
     }
 
     const result = await callAPI(history);
+    if (!result) { setLoading(false); return; } // key modal shown
 
     setStoryLog(prev => [...prev, { role: "narrator", text: result.story }]);
     setChoices(result.choices || []);
@@ -1473,68 +1480,6 @@ Provide 2-5 meaningfully different choices.`;
 
         <div style={{ position: "relative", zIndex: 1 }}>
 
-          {/* ── Key setup screen ── */}
-          {phase === "keySetup" && (
-            <div style={{ maxWidth: 500, margin: "0 auto" }}>
-              <div style={{ textAlign: "center", marginBottom: 32 }}>
-                <h1 style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 28, margin: "0 0 8px", letterSpacing: 2, textShadow: `0 0 40px ${theme.primary}30` }}>
-                  🗝️ {t("keySetupTitle")}
-                </h1>
-              </div>
-              <div style={{
-                background: theme.bgCard, backdropFilter: "blur(20px)", border: `1px solid ${theme.border}`,
-                borderRadius: 16, padding: "32px 36px", boxShadow: "0 10px 40px rgba(0,0,0,0.3)",
-              }}>
-                <p style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 13, lineHeight: 1.6, marginTop: 0 }}>
-                  {t("keySetupSub")}
-                </p>
-
-                {/* How-to steps */}
-                <div style={{ background: `${theme.border}30`, borderRadius: 10, padding: "16px 20px", marginBottom: 20 }}>
-                  <p style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 12, textTransform: "uppercase", letterSpacing: 1.5, margin: "0 0 10px" }}>
-                    {t("keyHowTo")}
-                  </p>
-                  {[t("keyStep1"), t("keyStep2"), t("keyStep3"), t("keyStep4")].map((step, i) => (
-                    <div key={i} style={{ fontFamily: theme.body, color: theme.text, fontSize: 12, marginBottom: 6, display: "flex", gap: 8, alignItems: "flex-start" }}>
-                      <span style={{ color: theme.primary, fontWeight: 700, flexShrink: 0 }}>{i + 1}.</span>
-                      <span>{step}{i === 0 ? (
-                        <> — <a href="https://aistudio.google.com" target="_blank" rel="noopener noreferrer" style={{ color: theme.primary }}>aistudio.google.com</a></>
-                      ) : null}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <input
-                  type="text"
-                  value={keyInput}
-                  onChange={e => { setKeyInput(e.target.value); setKeyError(""); }}
-                  onKeyDown={e => e.key === "Enter" && !keyValidating && handleValidateKey()}
-                  placeholder={t("keyPlaceholder")}
-                  style={{ ...inputStyle(theme), width: "100%", marginBottom: 10 }}
-                  autoFocus
-                />
-                {keyError && (
-                  <div style={{ fontFamily: theme.body, color: theme.accent, fontSize: 13, marginBottom: 10 }}>
-                    ⚠ {t("keyError")}: {keyError}
-                  </div>
-                )}
-                <button
-                  onClick={handleValidateKey}
-                  disabled={keyValidating || !keyInput.trim()}
-                  style={{
-                    width: "100%", padding: "12px 0", borderRadius: 8, border: "none",
-                    background: keyInput.trim() && !keyValidating ? theme.primary : `${theme.border}55`,
-                    color: keyInput.trim() && !keyValidating ? theme.bg : theme.textMuted,
-                    fontFamily: theme.heading, fontSize: 15, fontWeight: 700, cursor: keyInput.trim() && !keyValidating ? "pointer" : "not-allowed",
-                    letterSpacing: 1, textTransform: "uppercase", transition: "all 0.2s",
-                  }}
-                >
-                  {keyValidating ? t("keyValidating") : t("keyValidate")}
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* ── Home screen ── */}
           {phase === "home" && (
             <div style={{ maxWidth: 500, margin: "0 auto" }}>
@@ -1576,12 +1521,18 @@ Provide 2-5 meaningfully different choices.`;
                   💾 {t("loadSaved")}
                 </button>
                 <div style={{ textAlign: "center", paddingTop: 8, borderTop: `1px solid ${theme.border}33` }}>
-                  <button
-                    onClick={() => { localStorage.removeItem("gemini_api_key"); setKeyInput(""); setPhase("keySetup"); }}
-                    style={{ background: "none", border: "none", color: theme.textMuted, fontFamily: theme.body, fontSize: 12, cursor: "pointer", textDecoration: "underline" }}
-                  >
-                    {t("changeKey")}
-                  </button>
+                  {hasUserKey() ? (
+                    <button
+                      onClick={() => { clearUserKey(); setShowKeyModal(false); }}
+                      style={{ background: "none", border: "none", color: theme.textMuted, fontFamily: theme.body, fontSize: 12, cursor: "pointer", textDecoration: "underline" }}
+                    >
+                      🗝️ {t("changeKey")}
+                    </button>
+                  ) : (
+                    <span style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 12 }}>
+                      ✦ {t("freeTurnsLeft", { n: String(FREE_TURN_LIMIT) })} — no account needed
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -1609,6 +1560,72 @@ Provide 2-5 meaningfully different choices.`;
           {phase === "game" && renderGame()}
         </div>
       </div>
+
+      {/* Key modal — shown when free turns are exhausted */}
+      {showKeyModal && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 900,
+          backdropFilter: "blur(8px)", direction: isRTL ? "rtl" : "ltr",
+        }}>
+          <div style={{
+            background: theme.bgCard, border: `1px solid ${theme.primary}`,
+            borderRadius: 20, padding: "36px 40px", maxWidth: 480, width: "90%",
+            boxShadow: `0 0 60px ${theme.primary}20, 0 24px 80px rgba(0,0,0,0.6)`,
+          }}>
+            <h2 style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 22, margin: "0 0 10px", textAlign: "center" }}>
+              🗝️ {t("keyModalTitle")}
+            </h2>
+            <p style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 13, lineHeight: 1.7, marginTop: 0 }}>
+              {t("keyModalSub")}
+            </p>
+            <div style={{ background: `${theme.border}30`, borderRadius: 10, padding: "14px 18px", marginBottom: 18 }}>
+              <p style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 11, textTransform: "uppercase", letterSpacing: 1.5, margin: "0 0 8px" }}>
+                {t("keyHowTo")}
+              </p>
+              {[
+                { text: t("keyStep1"), link: "https://openrouter.ai" },
+                { text: t("keyStep2") },
+                { text: t("keyStep3") },
+                { text: t("keyStep4") },
+              ].map(({ text, link }, i) => (
+                <div key={i} style={{ fontFamily: theme.body, color: theme.text, fontSize: 12, marginBottom: 5, display: "flex", gap: 8 }}>
+                  <span style={{ color: theme.primary, fontWeight: 700, flexShrink: 0 }}>{i + 1}.</span>
+                  <span>{link ? <><a href={link} target="_blank" rel="noopener noreferrer" style={{ color: theme.primary }}>openrouter.ai</a> — {text.replace(/^go to openrouter\.ai /i, "")}</> : text}</span>
+                </div>
+              ))}
+            </div>
+            <input
+              type="text"
+              value={keyInput}
+              onChange={e => { setKeyInput(e.target.value); setKeyError(""); }}
+              onKeyDown={e => e.key === "Enter" && !keyValidating && handleValidateKey()}
+              placeholder={t("keyPlaceholder")}
+              style={{ ...inputStyle(theme), width: "100%", marginBottom: 10 }}
+              autoFocus
+            />
+            {keyError && (
+              <div style={{ fontFamily: theme.body, color: theme.accent, fontSize: 13, marginBottom: 10 }}>
+                ⚠ {t("keyError")}: {keyError}
+              </div>
+            )}
+            <button
+              onClick={handleValidateKey}
+              disabled={keyValidating || !keyInput.trim()}
+              style={{
+                width: "100%", padding: "12px 0", borderRadius: 8, border: "none",
+                background: keyInput.trim() && !keyValidating ? theme.primary : `${theme.border}55`,
+                color: keyInput.trim() && !keyValidating ? theme.bg : theme.textMuted,
+                fontFamily: theme.heading, fontSize: 15, fontWeight: 700,
+                cursor: keyInput.trim() && !keyValidating ? "pointer" : "not-allowed",
+                letterSpacing: 1, textTransform: "uppercase", transition: "all 0.2s",
+              }}
+            >
+              {keyValidating ? t("keyValidating") : t("keyValidate")}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Dice roller overlay — renders above everything */}
       {pendingRoll && (
