@@ -4,7 +4,8 @@ const MAX_TOKENS_CAP      = 2000;
 const MAX_TURNS_FREE      = 20;
 
 const ALLOWED_ORIGINS = [
-  "https://choose-your-adventure.vercel.app",
+  "https://choose-your-adventure-ten.vercel.app",
+  "https://choose-your-adventure-mfvn6loys-open-adventure.vercel.app",
   "http://localhost:5173",
 ];
 
