@@ -123,6 +123,17 @@ const TR = {
   freeTurnsInfo:    { English: "{n} free turns included · no sign-up needed", Hebrew: "{n} תורות חינמיות כלולות · ללא הרשמה", Arabic: "يشمل {n} دورات مجانية · لا حاجة للتسجيل" },
   keyModalSubHome:  { English: "Add a free OpenRouter key to play without limits — sign up takes 2 minutes, no credit card.", Hebrew: "הוסף מפתח OpenRouter חינמי למשחק ללא הגבלות — ההרשמה לוקחת 2 דקות, ללא כרטיס אשראי.", Arabic: "أضف مفتاح OpenRouter المجاني للعب بدون قيود — التسجيل يستغرق دقيقتين، بدون بطاقة ائتمان." },
   turnsLeft:        { English: "{n} free turns left", Hebrew: "נשארו {n} תורות חינמיות", Arabic: "تبقّى {n} دورات مجانية" },
+  suggestedNames:   { English: "Suggested names", Hebrew: "שמות מוצעים", Arabic: "أسماء مقترحة" },
+  optional_:        { English: "optional", Hebrew: "אופציונלי", Arabic: "اختياري" },
+  // ── Adventure length options ──
+  sprint:           { English: "Sprint",   Hebrew: "ספרינט",  Arabic: "سريع" },
+  sprintDesc:       { English: "~5 turns — 1 chapter",   Hebrew: "~5 תורות — פרק אחד",   Arabic: "~5 جولات — فصل واحد" },
+  shortAdv:         { English: "Short",    Hebrew: "קצר",     Arabic: "قصير" },
+  shortAdvDesc:     { English: "~10 turns — 2 chapters", Hebrew: "~10 תורות — 2 פרקים",  Arabic: "~10 جولات — فصلان" },
+  standard:         { English: "Standard", Hebrew: "רגיל",    Arabic: "عادي" },
+  standardDesc:     { English: "~20 turns — 4 chapters", Hebrew: "~20 תורות — 4 פרקים",  Arabic: "~20 جولات — 4 فصول" },
+  epic:             { English: "Epic",     Hebrew: "אפי",     Arabic: "ملحمي" },
+  epicDesc:         { English: "~40 turns — 8 chapters", Hebrew: "~40 תורות — 8 פרקים",  Arabic: "~40 جولات — 8 فصول" },
 };
 
 // ─── THEMES ────────────────────────────────────────────────────
@@ -188,6 +199,138 @@ const DICE_OUTCOMES = [
   { labelKey: "partSuccess", color: "#4DB6AC", bg: "rgba(77,182,172,0.12)",  narrative: "partial success — it works but with a cost or catch" },
   { labelKey: "critSuccess", color: "#66BB6A", bg: "rgba(102,187,106,0.12)", narrative: "exceptional success, better than expected" },
 ];
+
+// ─── CHARACTER GENERATION ──────────────────────────────────────
+const CHARACTER_NAMES = {
+  fantasy: {
+    male:   ["Aldric", "Theron", "Kael", "Dorian", "Soren", "Varen"],
+    female: ["Lyra", "Seraphine", "Elara", "Miryn", "Vesper", "Nara"],
+  },
+  scifi: {
+    male:   ["Zephyr", "Axon", "Riven", "Coda", "Voss", "Nex"],
+    female: ["Nova", "Sable", "Zara", "Kira", "Aria", "Cyra"],
+  },
+  reality: {
+    male:   ["Marcus", "Leo", "Dante", "Finn", "Eli", "Rafael"],
+    female: ["Maya", "Nora", "Cass", "Elena", "Jade", "Iris"],
+  },
+  mystery: {
+    male:   ["Victor", "Edmund", "Felix", "Caine", "Lucian", "Dorian"],
+    female: ["Vera", "Madeleine", "Petra", "Cleo", "Margot", "Isolde"],
+  },
+};
+
+const DEFAULT_SEEDS = {
+  fantasy: "An ancient kingdom teeters on the edge of ruin as a forgotten evil stirs in the northern mountains.",
+  scifi:   "A malfunctioning space station drifts toward a black hole while its crew uncovers a sinister conspiracy.",
+  reality: "A chance discovery in a city alley pulls an ordinary person into a web of dangerous secrets.",
+  mystery: "A locked-room murder at a remote estate — and every guest has something to hide.",
+};
+
+const APPEARANCE_PARTS = {
+  body:    ["Athletic build", "Slim and wiry", "Stocky and muscular", "Tall and lean", "Average build", "Broad-shouldered", "Petite and nimble", "Short and sturdy"],
+  hairLen: ["shaved head", "close-cropped hair", "short hair", "shoulder-length hair", "long hair", "flowing hair"],
+  hairCol: ["black", "dark brown", "chestnut brown", "auburn", "dirty blonde", "blonde", "red", "silver", "white"],
+  feature: [
+    "a scar running across one cheek", "mismatched eye colors", "a small birthmark on the neck",
+    "calloused and ink-stained hands", "a faded tattoo on the forearm", "unusually sharp cheekbones",
+    "a distinctive hawkish nose", "a warm gap-toothed smile", "unsettlingly pale eyes", "a slight but permanent squint",
+  ],
+};
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function randomAppearanceStr() {
+  const { body, hairLen, hairCol, feature } = APPEARANCE_PARTS;
+  return `${pick(body)}, ${pick(hairCol)} ${pick(hairLen)}, ${pick(feature)}`;
+}
+
+// ─── MUSIC ─────────────────────────────────────────────────────
+// HOW TO FILL IN TRACKS:
+//   1. Go to https://pixabay.com/music/ and search each mood (e.g. "peaceful loop", "tense suspense")
+//   2. Open a track page, right-click the play button → Inspect → Network tab → look for .mp3 request
+//   3. Copy the full https://cdn.pixabay.com/audio/... URL and paste it below
+const MUSIC_TRACKS = {
+  peaceful:   "",
+  tense:      "",
+  action:     "",
+  dramatic:   "",
+  sad:        "",
+  triumphant: "",
+  mysterious: "",
+  neutral:    "",
+};
+
+function crossfadeTo(url, targetVol, audioRef, currentUrlRef, fadeRef) {
+  clearInterval(fadeRef.current);
+  const prev = audioRef.current;
+
+  // Fade out previous
+  if (prev && !prev.paused) {
+    let vol = prev.volume;
+    fadeRef.current = setInterval(() => {
+      vol = Math.max(0, vol - targetVol / 15);
+      try { prev.volume = vol; } catch {}
+      if (vol <= 0) {
+        clearInterval(fadeRef.current);
+        prev.pause();
+      }
+    }, 100);
+  }
+
+  // Start new track
+  const audio = new Audio(url);
+  audio.loop = true;
+  audio.volume = 0;
+  audioRef.current = audio;
+  currentUrlRef.current = url;
+  audio.play().catch(() => {}); // browser may block — silently ignore
+
+  // Fade in
+  let vol = 0;
+  const timer = setInterval(() => {
+    vol = Math.min(targetVol, vol + targetVol / 15);
+    try { audio.volume = vol; } catch {}
+    if (vol >= targetVol) clearInterval(timer);
+  }, 100);
+}
+
+function useMusic(mood, volume, enabled) {
+  const audioRef      = useRef(null);
+  const currentUrlRef = useRef(null);
+  const fadeRef       = useRef(null);
+
+  useEffect(() => {
+    if (!enabled) {
+      // Fade out and pause when disabled
+      const audio = audioRef.current;
+      if (audio && !audio.paused) {
+        let v = audio.volume;
+        const t = setInterval(() => {
+          v = Math.max(0, v - 0.03);
+          try { audio.volume = v; } catch {}
+          if (v <= 0) { clearInterval(t); audio.pause(); }
+        }, 100);
+      }
+      return;
+    }
+    const url = MUSIC_TRACKS[mood] || MUSIC_TRACKS.neutral;
+    if (!url || url === currentUrlRef.current) return;
+    crossfadeTo(url, volume, audioRef, currentUrlRef, fadeRef);
+  }, [mood, volume, enabled]);
+
+  // Resume correct volume when re-enabled
+  useEffect(() => {
+    if (enabled && audioRef.current && !audioRef.current.paused) {
+      try { audioRef.current.volume = volume; } catch {}
+    }
+  }, [volume, enabled]);
+
+  useEffect(() => () => {
+    clearInterval(fadeRef.current);
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+  }, []);
+}
 
 // ─── SHARED COMPONENTS ─────────────────────────────────────────
 function FloatingParticles({ theme }) {
@@ -392,7 +535,7 @@ function NavButtons({ theme, onBack, onNext, canNext = true, nextLabel, backLabe
   );
 }
 
-function SidebarActions({ theme, t, turnCount, isRTL, onSave, onExport, onQuit, onKey }) {
+function SidebarActions({ theme, t, turnCount, isRTL, onSave, onExport, onQuit, onKey, musicEnabled, musicVolume, onMusicToggle, onVolumeChange }) {
   const userHasKey = hasUserKey();
   const free = FREE_TURN_LIMIT;
   const remaining = Math.max(0, free - turnCount);
@@ -440,6 +583,21 @@ function SidebarActions({ theme, t, turnCount, isRTL, onSave, onExport, onQuit, 
         onMouseOut={e  => { e.currentTarget.style.borderColor = `${theme.accent}50`; e.currentTarget.style.opacity = "1"; }}>
         🚪 {t("quitGame")}
       </button>
+      {/* Music controls */}
+      <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${theme.border}22`, display: "flex", alignItems: "center", gap: 8 }}>
+        <button
+          onClick={onMusicToggle}
+          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: 0, lineHeight: 1, opacity: musicEnabled ? 1 : 0.4, transition: "opacity 0.2s" }}
+          title={musicEnabled ? "Mute music" : "Unmute music"}>
+          {musicEnabled ? "🎵" : "🔇"}
+        </button>
+        <input
+          type="range" min={0} max={1} step={0.05}
+          value={musicVolume}
+          onChange={e => onVolumeChange(parseFloat(e.target.value))}
+          style={{ flex: 1, accentColor: theme.primary, cursor: "pointer", opacity: musicEnabled ? 0.8 : 0.3 }}
+        />
+      </div>
     </div>
   );
 }
@@ -558,6 +716,14 @@ export default function AdventureGame() {
   const [keyValidating, setKeyValidating] = useState(false);
   const [showHomeKeyHelp, setShowHomeKeyHelp] = useState(false);
 
+  // Music state
+  const [currentMood, setCurrentMood]     = useState("neutral");
+  const [musicVolume, setMusicVolume]     = useState(0.4);
+  const [musicEnabled, setMusicEnabled]   = useState(false);
+  const hasInteracted = useRef(false);
+
+  useMusic(currentMood, musicVolume, musicEnabled && phase === "game");
+
   const storyEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const bannerTimerRef = useRef(null);
@@ -588,7 +754,13 @@ export default function AdventureGame() {
   }, [storyLog, choices]);
 
   // ─── SYSTEM PROMPT ────────────────────────────────────────────
-  const buildSystemPrompt = useCallback(() => {
+  const buildSystemPrompt = useCallback((cfgOverride, charOverride) => {
+    const cfg  = cfgOverride  ?? config;
+    const char = charOverride ?? character;
+    const eLang    = cfg.language || "English";
+    const eHebrew  = eLang === "Hebrew";
+    const eRTL     = RTL_LANGS.includes(eLang);
+
     const ageRules = {
       kids:  "Content suitable for children 8+. No violence beyond mild conflict. No romance. Simple vocabulary.",
       teen:  "Content for ages 13+. Moderate action OK. Light romantic tension fine.",
@@ -599,7 +771,12 @@ export default function AdventureGame() {
       medium: "One paragraph (3-5 sentences) per beat.",
       long:   "2-3 rich paragraphs per beat. Be descriptive and immersive.",
     };
-    const skillsEN = character.skills.map(s => getSkillEN(config.genre, s));
+    const skillsEN = char.skills.map(s => {
+      const g = GENRE_SKILLS[cfg.genre];
+      if (!g || !eHebrew) return s;
+      const idx = g.he.indexOf(s);
+      return idx >= 0 ? g.en[idx] : s;
+    });
 
     const chapterSection = chapterBrief
       ? `CHAPTER ${chapterNumber}${totalChapters > 1 ? ` of ${totalChapters}` : ""}: "${chapterBrief.title}" — Goal: ${chapterBrief.goal} | Obstacle: ${chapterBrief.obstacle}\n→ Set chapterComplete:true only when this goal is conclusively achieved. Player may explore freely and hit dead ends.`
@@ -613,63 +790,65 @@ Locations: ${storySummary.world.locations.join(", ")}` : ""}${storySummary.world
 Key decisions: ${storySummary.world.decisions.join("; ")}` : ""}${storySummary.world?.threads?.length ? `
 Active threads: ${storySummary.world.threads.join("; ")}` : ""}` : "";
 
-    const total = config.storyLength || 20;
+    const total = cfg.storyLength || 20;
     const effectiveTurn = Math.min(turnCount, total);
     const pct = effectiveTurn / total;
     const isLastChapter = chapterNumber >= totalChapters;
     let phaseInstr;
-    if (turnCount === 0)                         phaseInstr = "PHASE — OPENING: Establish the world, character background, and inciting situation.";
-    else if (turnCount >= total && isLastChapter) phaseInstr = "PHASE — FINALE: Deliver a satisfying conclusion. Set gameOver:true once the story reaches a complete resolution.";
+    if (turnCount === 0)                              phaseInstr = "PHASE — OPENING: Establish the world, character background, and inciting situation.";
+    else if (turnCount >= total && isLastChapter)     phaseInstr = "PHASE — FINALE: Deliver a satisfying conclusion. Set gameOver:true once the story reaches a complete resolution.";
     else if (turnCount >= total - 1 && isLastChapter) phaseInstr = "PHASE — CLIMAX: Bring all threads to a head — resolution is close.";
-    else if (pct < 0.35)                         phaseInstr = "PHASE — EARLY: Develop the world, introduce complications, build toward the central conflict.";
-    else if (pct < 0.65)                         phaseInstr = "PHASE — MIDDLE: Escalate tension, raise stakes, introduce a twist.";
-    else                                         phaseInstr = `PHASE — LATE: Push toward the climax. Consequences mount, ${Math.max(1, total - turnCount)} turn(s) remaining.`;
+    else if (pct < 0.35)                              phaseInstr = "PHASE — EARLY: Develop the world, introduce complications, build toward the central conflict.";
+    else if (pct < 0.65)                              phaseInstr = "PHASE — MIDDLE: Escalate tension, raise stakes, introduce a twist.";
+    else                                              phaseInstr = `PHASE — LATE: Push toward the climax. Consequences mount, ${Math.max(1, total - turnCount)} turn(s) remaining.`;
 
-    return `You are the narrator of an interactive ${THEMES[config.genre]?.nameKey || "fantasy"} adventure game.
+    return `You are the narrator of an interactive ${THEMES[cfg.genre]?.nameKey || "fantasy"} adventure game.
 
-LANGUAGE: Respond ENTIRELY in ${config.language}. ALL story text and choices must be in ${config.language}.
+LANGUAGE: Respond ENTIRELY in ${eLang}. ALL story text and choices must be in ${eLang}.
 
-PERSPECTIVE: ${config.perspective === "first"
-  ? isHebrew
+PERSPECTIVE: ${cfg.perspective === "first"
+  ? eHebrew
     ? 'כתוב בגוף ראשון. השתמש ב"אני", "שלי". דוגמה: "שללתי את חרבי וצעדתי אל החשיכה."'
-    : isRTL
+    : eRTL
       ? 'اكتب بضمير المتكلم. استخدم "أنا"، "لي". مثال: "سللت سيفي وخطوت إلى الظلام."'
       : 'Write in FIRST PERSON. Use "I", "my", "me". Example: "I drew my sword and stepped into the dark."'
-  : isHebrew
+  : eHebrew
     ? 'כתוב בגוף שני. השתמש ב"אתה", "שלך". דוגמה: "אתה שולף את חרבך וצועד אל החשיכה."'
-    : isRTL
+    : eRTL
       ? 'اكتب بضمير المخاطب. استخدم "أنت"، "لك". مثال: "تسلّ سيفك وتخطو نحو الظلام."'
       : 'Write in SECOND PERSON. Use "you", "your". Example: "You draw your sword and step into the dark."'}
 
-CHARACTER: Name: ${character.name || "The Adventurer"}, Gender: ${character.gender || "unspecified"}, Age: ${character.age || "unknown"}, Appearance: ${(character.appearance || "unspecified").replace(/\n+/g, ", ")}, Skills: ${skillsEN.join(", ") || "none"}
+CHARACTER: Name: ${char.name || "The Adventurer"}, Gender: ${char.gender || "unspecified"}, Age: ${char.age || "unknown"}, Appearance: ${(char.appearance || "unspecified").replace(/\n+/g, ", ")}, Skills: ${skillsEN.join(", ") || "none"}
 
-CONTENT: ${ageRules[config.ageTier] || ageRules.teen}
-LENGTH: ${lengthRules[config.responseLength] || lengthRules.medium}
-${config.deathPossible ? "DEATH IS POSSIBLE if very poor choices are made." : "DEATH IS NOT POSSIBLE. Failures redirect the story."}
-${config.trackStats
+CONTENT: ${ageRules[cfg.ageTier] || ageRules.teen}
+LENGTH: ${lengthRules[cfg.responseLength] || lengthRules.medium}
+${cfg.deathPossible ? "DEATH IS POSSIBLE if very poor choices are made." : "DEATH IS NOT POSSIBLE. Failures redirect the story."}
+${cfg.trackStats
   ? `TRACK STATS: Always return a "stats" object with the updated values. Current authoritative state — health: ${stats.health}/100, inventory: [${(stats.inventory || []).join(", ") || "empty"}], relationships: {${Object.entries(stats.relationships || {}).map(([k,v]) => `${k}: ${v}`).join(", ") || "none"}}. Carry these forward and modify based on events. Reduce health on dangerous failures.`
   : ""}
 SKILLS: When situations relate to character skills, acknowledge the skill and give more favorable outcomes.
-${config.storyPrompt ? `PREMISE: ${config.storyPrompt}` : "Create an original compelling opening."}
+${cfg.storyPrompt ? `PREMISE: ${cfg.storyPrompt}` : "Create an original compelling opening."}
 ${storyContextSection}
 ${chapterSection}
 
 STORY ARC: ${phaseInstr}
 
 RESPOND WITH VALID JSON ONLY (no markdown fences):
-{"story":"...","choices":["...","...","..."],${config.trackStats ? '"stats":{"health":100,"inventory":[],"relationships":{}},' : ''}"gameOver":false,"gameOverReason":"","rollRequired":false,"rollContext":"","chapterComplete":false,"chapterProgress":{"achieved":[],"clues":[]}}
+{"story":"...","choices":["...","...","..."],${cfg.trackStats ? '"stats":{"health":100,"inventory":[],"relationships":{}},' : ''}"gameOver":false,"gameOverReason":"","rollRequired":false,"rollContext":"","chapterComplete":false,"chapterProgress":{"achieved":[],"clues":[]},"mood":"neutral"}
 
 rollRequired: true when next action has meaningful risk (combat, stealth, locks, persuasion). False for safe/narrative choices.
 rollContext: Short phrase shown to player before rolling (e.g. "pick the ancient lock").
 chapterComplete: true ONLY when the single chapter goal is conclusively achieved.
 chapterProgress: Update every turn — achieved: specific milestones completed toward the one chapter goal (cumulative, carry forward); clues: hints/info the player has discovered that help reach the goal (cumulative).
+mood: Emotional tone of the story text just returned. One of: peaceful, tense, action, dramatic, sad, triumphant, mysterious, neutral.
 Provide 2-5 meaningfully different choices.`;
-  }, [config, character, isHebrew, isRTL, turnCount, storySummary, chapterBrief, chapterNumber, totalChapters, stats]);
+  }, [config, character, turnCount, storySummary, chapterBrief, chapterNumber, totalChapters, stats]);
 
   // ─── API CALL ─────────────────────────────────────────────────
   const callAPI = useCallback(async (messages, opts = {}) => {
     try {
-      return await api.chat(buildSystemPrompt(), messages, { ...opts, turnCount });
+      const sysPrompt = opts.systemPrompt ?? buildSystemPrompt();
+      return await api.chat(sysPrompt, messages, { ...opts, turnCount });
     } catch (err) {
       if (err.message === "__need_key__") {
         setKeyModalContext("game");
@@ -767,32 +946,64 @@ Provide 2-5 meaningfully different choices.`;
 
   // ─── START ADVENTURE ──────────────────────────────────────────
   const startAdventure = async () => {
+    // ── Apply defaults for any unset fields ──
+    const names   = CHARACTER_NAMES[config.genre] || CHARACTER_NAMES.fantasy;
+    const isMale  = Math.random() < 0.5;
+    const allSkillsEN = GENRE_SKILLS[config.genre]?.en || [];
+    const shuffled = [...allSkillsEN].sort(() => Math.random() - 0.5);
+
+    const finalChar = {
+      name:       character.name.trim()    || pick(isMale ? names.male : names.female),
+      gender:     character.gender         || (isMale ? "male" : "female"),
+      age:        character.age.trim()     || String(Math.floor(Math.random() * 61) + 6),
+      appearance: character.appearance.trim() || randomAppearanceStr(),
+      skills:     character.skills.length >= 2 ? character.skills : shuffled.slice(0, 2),
+    };
+
+    const validLengths = [5, 10, 20, 40];
+    const finalCfg = {
+      ...config,
+      ageTier:        config.ageTier        || "teen",
+      responseLength: config.responseLength  || "short",
+      storyLength:    validLengths.includes(config.storyLength) ? config.storyLength : 5,
+      deathPossible:  config.deathPossible  ?? false,
+      trackStats:     config.trackStats     ?? false,
+      perspective:    config.perspective    || "second",
+      storyPrompt:    config.storyPrompt.trim() || DEFAULT_SEEDS[config.genre] || "",
+    };
+
+    // Update state so the rest of the session (makeChoice, saves, etc.) uses final values
+    setConfig(finalCfg);
+    setCharacter(finalChar);
     setPhase("game");
     setLoading(true);
 
-    // Generate chapter 1 brief after a short delay so it doesn't compete with the opening LLM call
-    setTimeout(() => generateChapterBrief(1, totalChapters, ""), 5000);
+    const finalTotalChapters = CHAPTER_MAP[finalCfg.storyLength] || 1;
+    setTimeout(() => generateChapterBrief(1, finalTotalChapters, ""), 5000);
 
     const openingLength = {
       short:  "3-4 sentences",
       medium: "6-8 sentences (roughly 2 paragraphs)",
       long:   "4-5 rich, descriptive paragraphs",
-    }[config.responseLength] || "6-8 sentences";
+    }[finalCfg.responseLength] || "3-4 sentences";
 
     const firstMessage = [{ role: "user", content:
       `Begin the adventure with an opening of ${openingLength}. Cover: ` +
-      `(1) a brief background on ${character.name} — who they are, personality, and what shaped them; ` +
+      `(1) a brief background on ${finalChar.name} — who they are, personality, and what shaped them; ` +
       `(2) the world — its tone, state, and defining features; ` +
       `(3) the current situation — what is happening right now that sets the story in motion. ` +
       `End with 2-5 meaningful choices.`
     }];
 
-    const result = await callAPI(firstMessage);
+    // Build system prompt with final values (state updates above are async; pass overrides directly)
+    const systemPrompt = buildSystemPrompt(finalCfg, finalChar);
+    const result = await callAPI(firstMessage, { systemPrompt });
     if (!result) { setLoading(false); return; } // key modal shown
     setStoryLog([{ role: "narrator", text: result.story }]);
     setChoices(result.choices || []);
-    if (result.stats && config.trackStats) setStats(result.stats);
+    if (result.stats && finalCfg.trackStats) setStats(result.stats);
     setNextRollRequired({ required: !!result.rollRequired, context: result.rollContext || "" });
+    setCurrentMood(result.mood || "peaceful");
     setTurnCount(1);
     setLoading(false);
   };
@@ -913,7 +1124,15 @@ Provide 2-5 meaningfully different choices.`;
     setStoryLog(prev => [...prev, { role: "narrator", text: result.story }]);
     setChoices(result.choices || []);
     if (result.stats && config.trackStats) setStats(result.stats);
-    if (result.gameOver) { setGameOver(true); setChoices([]); }
+    if (result.gameOver) {
+      setGameOver(true);
+      setChoices([]);
+      setCurrentMood(result.gameOverReason?.toLowerCase().includes("death") ? "sad" : "triumphant");
+    } else if (result.chapterComplete) {
+      setCurrentMood("triumphant");
+    } else {
+      setCurrentMood(result.mood || "neutral");
+    }
 
     // Health damage on critical failure if LLM didn't handle it
     if (rollInfo?.value === 1 && config.trackStats && !result.stats) {
@@ -1029,7 +1248,7 @@ Provide 2-5 meaningfully different choices.`;
                   style={{ textAlign: "center", fontSize: 16 }}>{l.label}</OptionButton>
               ))}
             </div>
-            <NavButtons {...nav} onBack={() => setPhase("home")} onNext={() => setSetupStep(1)} canNext={!!config.language} />
+            <NavButtons {...nav} onBack={() => setPhase("home")} onNext={() => setSetupStep(1)} canNext />
           </SetupCard>
         );
 
@@ -1070,7 +1289,7 @@ Provide 2-5 meaningfully different choices.`;
                 </OptionButton>
               ))}
             </div>
-            <NavButtons {...nav} onBack={() => setSetupStep(1)} onNext={() => setSetupStep(3)} canNext={!!config.ageTier} />
+            <NavButtons {...nav} onBack={() => setSetupStep(1)} onNext={() => setSetupStep(3)} canNext />
           </SetupCard>
         );
 
@@ -1086,7 +1305,7 @@ Provide 2-5 meaningfully different choices.`;
                 </OptionButton>
               ))}
             </div>
-            <NavButtons {...nav} onBack={() => setSetupStep(2)} onNext={() => setSetupStep(4)} canNext={!!config.responseLength} />
+            <NavButtons {...nav} onBack={() => setSetupStep(2)} onNext={() => setSetupStep(4)} canNext />
           </SetupCard>
         );
 
@@ -1095,21 +1314,21 @@ Provide 2-5 meaningfully different choices.`;
           <SetupCard theme={theme} active isRTL={isRTL} title={t("storyDuration")} subtitle={t("storyDurationSub")}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {[
-                { turns: 5,  icon: "⚡", label: "Sprint",   desc: `~5 turns — 1 chapter` },
-                { turns: 10, icon: "🏃", label: "Short",    desc: `~10 turns — 2 chapters` },
-                { turns: 20, icon: "📖", label: "Standard", desc: `~20 turns — 4 chapters` },
-                { turns: 40, icon: "🏔️", label: "Epic",     desc: `~40 turns — 8 chapters` },
-              ].map(({ turns, icon, label, desc }) => (
+                { turns: 5,  icon: "⚡", labelKey: "sprint",   descKey: "sprintDesc" },
+                { turns: 10, icon: "🏃", labelKey: "shortAdv", descKey: "shortAdvDesc" },
+                { turns: 20, icon: "📖", labelKey: "standard", descKey: "standardDesc" },
+                { turns: 40, icon: "🏔️", labelKey: "epic",     descKey: "epicDesc" },
+              ].map(({ turns, icon, labelKey, descKey }) => (
                 <OptionButton key={turns} theme={theme} selected={config.storyLength === turns}
                   onClick={() => setConfig(c => ({ ...c, storyLength: turns }))}
                   style={{ textAlign: "center", padding: "16px 12px" }}>
                   <span style={{ fontSize: 26, display: "block", marginBottom: 6 }}>{icon}</span>
-                  <strong style={{ fontFamily: theme.heading, fontSize: 15 }}>{label}</strong>
-                  <span style={{ display: "block", fontSize: 12, color: theme.textMuted, marginTop: 4 }}>{desc}</span>
+                  <strong style={{ fontFamily: theme.heading, fontSize: 15 }}>{t(labelKey)}</strong>
+                  <span style={{ display: "block", fontSize: 12, color: theme.textMuted, marginTop: 4 }}>{t(descKey)}</span>
                 </OptionButton>
               ))}
             </div>
-            <NavButtons {...nav} onBack={() => setSetupStep(3)} onNext={() => setSetupStep(5)} canNext={!!config.storyLength} />
+            <NavButtons {...nav} onBack={() => setSetupStep(3)} onNext={() => setSetupStep(5)} canNext />
           </SetupCard>
         );
 
@@ -1138,7 +1357,7 @@ Provide 2-5 meaningfully different choices.`;
                 </OptionButton>
               </div>
             </div>
-            <NavButtons {...nav} onBack={() => setSetupStep(4)} onNext={() => setSetupStep(6)} canNext={config.deathPossible !== null && config.trackStats !== null} />
+            <NavButtons {...nav} onBack={() => setSetupStep(4)} onNext={() => setSetupStep(6)} canNext />
           </SetupCard>
         );
 
@@ -1158,7 +1377,7 @@ Provide 2-5 meaningfully different choices.`;
                 </OptionButton>
               ))}
             </div>
-            <NavButtons {...nav} onBack={() => setSetupStep(5)} onNext={() => setSetupStep(7)} canNext={!!config.perspective} />
+            <NavButtons {...nav} onBack={() => setSetupStep(5)} onNext={() => setSetupStep(7)} canNext />
           </SetupCard>
         );
 
@@ -1166,7 +1385,7 @@ Provide 2-5 meaningfully different choices.`;
         return (
           <SetupCard theme={theme} active isRTL={isRTL} title={t("storySeed")} subtitle={t("storySeedSub")}>
             <textarea value={config.storyPrompt} onChange={e => setConfig(c => ({ ...c, storyPrompt: e.target.value }))}
-              placeholder={t("storySeedPH")}
+              placeholder={DEFAULT_SEEDS[config.genre] || t("storySeedPH")}
               style={{ ...inputStyle(theme), minHeight: 120, resize: "vertical", direction: isRTL ? "rtl" : "ltr" }} />
             <NavButtons {...nav} onBack={() => setSetupStep(6)} onNext={() => setSetupStep(8)} canNext />
           </SetupCard>
@@ -1174,23 +1393,55 @@ Provide 2-5 meaningfully different choices.`;
 
       case "character": {
         const skillsDisplay = getSkillsDisplay(config.genre);
+        const nameChips = CHARACTER_NAMES[config.genre] || CHARACTER_NAMES.fantasy;
+        const chipBtn = (name, gender) => (
+          <button key={name}
+            onClick={() => setCharacter(c => ({ ...c, name, gender }))}
+            style={{
+              background: character.name === name ? theme.primary : "transparent",
+              border: `1px solid ${character.name === name ? theme.primary : theme.border}`,
+              borderRadius: 14, padding: "3px 11px",
+              color: character.name === name ? theme.bg : theme.textMuted,
+              fontFamily: theme.body, fontSize: 12, cursor: "pointer", transition: "all 0.15s",
+            }}>{name}</button>
+        );
         return (
           <SetupCard theme={theme} active isRTL={isRTL} title={t("createChar")} subtitle={t("createCharSub")}>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <div>
-                  <label style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 12, display: "block", marginBottom: 4 }}>{t("name")}</label>
-                  <input value={character.name} onChange={e => setCharacter(c => ({ ...c, name: e.target.value }))}
-                    placeholder={t("namePH")} style={{ ...inputStyle(theme), direction: isRTL ? "rtl" : "ltr" }} />
+              <div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 8 }}>
+                  <div>
+                    <label style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 12, display: "block", marginBottom: 4 }}>
+                      {t("name")} <span style={{ opacity: 0.5 }}>({t("optional_")})</span>
+                    </label>
+                    <input value={character.name} onChange={e => setCharacter(c => ({ ...c, name: e.target.value }))}
+                      placeholder={t("namePH")} style={{ ...inputStyle(theme), direction: isRTL ? "rtl" : "ltr" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 12, display: "block", marginBottom: 4 }}>
+                      {t("age")} <span style={{ opacity: 0.5 }}>({t("optional_")})</span>
+                    </label>
+                    <input value={character.age} onChange={e => setCharacter(c => ({ ...c, age: e.target.value }))}
+                      placeholder="6 – 66" style={inputStyle(theme)} />
+                  </div>
                 </div>
-                <div>
-                  <label style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 12, display: "block", marginBottom: 4 }}>{t("age")}</label>
-                  <input value={character.age} onChange={e => setCharacter(c => ({ ...c, age: e.target.value }))}
-                    placeholder={t("agePH")} style={inputStyle(theme)} />
+                {/* Name suggestions */}
+                <div style={{ marginBottom: 2 }}>
+                  <span style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 11, display: "block", marginBottom: 5 }}>
+                    {t("suggestedNames")}:
+                  </span>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 5 }}>
+                    <span style={{ color: theme.textMuted, fontSize: 13, alignSelf: "center", minWidth: 14 }}>♂</span>
+                    {nameChips.male.map(n => chipBtn(n, "male"))}
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                    <span style={{ color: theme.textMuted, fontSize: 13, alignSelf: "center", minWidth: 14 }}>♀</span>
+                    {nameChips.female.map(n => chipBtn(n, "female"))}
+                  </div>
                 </div>
               </div>
               <div>
-                <label style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 12, display: "block", marginBottom: 6 }}>{t("gender")}</label>
+                <label style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 12, display: "block", marginBottom: 6 }}>{t("gender")} <span style={{ opacity: 0.5 }}>({t("optional_")})</span></label>
                 <div style={{ display: "flex", gap: 8 }}>
                   {["male","female","nonBinary","other"].map(g => (
                     <OptionButton key={g} theme={theme} selected={character.gender === g}
@@ -1200,13 +1451,15 @@ Provide 2-5 meaningfully different choices.`;
                 </div>
               </div>
               <div>
-                <label style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 12, display: "block", marginBottom: 4 }}>{t("appearance")}</label>
+                <label style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 12, display: "block", marginBottom: 4 }}>
+                  {t("appearance")} <span style={{ opacity: 0.5 }}>({t("optional_")})</span>
+                </label>
                 <textarea value={character.appearance} onChange={e => setCharacter(c => ({ ...c, appearance: e.target.value }))}
                   placeholder={t("appearancePH")} style={{ ...inputStyle(theme), minHeight: 60, resize: "vertical", direction: isRTL ? "rtl" : "ltr" }} />
               </div>
               <div>
                 <label style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 12, display: "block", marginBottom: 6 }}>
-                  {t("skills")} <span style={{ opacity: 0.5 }}>{t("skillsSub")}</span>
+                  {t("skills")} <span style={{ opacity: 0.5 }}>{t("skillsSub")} — {t("optional_")}, 2 will be chosen if skipped</span>
                 </label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {skillsDisplay.map(skill => {
@@ -1223,7 +1476,7 @@ Provide 2-5 meaningfully different choices.`;
               </div>
             </div>
             <NavButtons {...nav} onBack={() => setSetupStep(7)} onNext={startAdventure}
-              canNext={character.name.trim().length > 0 && character.skills.length > 0} nextLabel={t("beginAdventure")} />
+              canNext nextLabel={t("beginAdventure")} />
           </SetupCard>
         );
       }
@@ -1433,6 +1686,8 @@ Provide 2-5 meaningfully different choices.`;
           <SidebarActions theme={theme} t={t} turnCount={turnCount} isRTL={isRTL}
             onSave={handleSaveGame} onExport={handleExport} onQuit={resetGame}
             onKey={() => { setKeyModalContext("game"); setShowKeyModal(true); setKeyInput(""); setKeyError(""); }}
+            musicEnabled={musicEnabled} musicVolume={musicVolume}
+            onMusicToggle={() => setMusicEnabled(v => !v)} onVolumeChange={setMusicVolume}
           />
         </div>
       )}
@@ -1457,6 +1712,8 @@ Provide 2-5 meaningfully different choices.`;
           <SidebarActions theme={theme} t={t} turnCount={turnCount} isRTL={isRTL}
             onSave={handleSaveGame} onExport={handleExport} onQuit={resetGame}
             onKey={() => { setKeyModalContext("game"); setShowKeyModal(true); setKeyInput(""); setKeyError(""); }}
+            musicEnabled={musicEnabled} musicVolume={musicVolume}
+            onMusicToggle={() => setMusicEnabled(v => !v)} onVolumeChange={setMusicVolume}
           />
         </div>
       )}
@@ -1512,6 +1769,8 @@ Provide 2-5 meaningfully different choices.`;
           <SidebarActions theme={theme} t={t} turnCount={turnCount} isRTL={isRTL}
             onSave={handleSaveGame} onExport={handleExport} onQuit={resetGame}
             onKey={() => { setKeyModalContext("game"); setShowKeyModal(true); setKeyInput(""); setKeyError(""); }}
+            musicEnabled={musicEnabled} musicVolume={musicVolume}
+            onMusicToggle={() => setMusicEnabled(v => !v)} onVolumeChange={setMusicVolume}
           />
         </div>
       )}
@@ -1538,11 +1797,19 @@ Provide 2-5 meaningfully different choices.`;
         ::placeholder { color: ${theme.textMuted}; opacity: 0.6; }
       `}</style>
 
-      <div style={{
-        minHeight: "100vh", background: theme.bg, backgroundImage: theme.bgImage,
-        padding: "40px 20px", fontFamily: theme.body, color: theme.text, transition: "background 0.6s ease",
-        direction: isRTL ? "rtl" : "ltr",
-      }}>
+      <div
+        style={{
+          minHeight: "100vh", background: theme.bg, backgroundImage: theme.bgImage,
+          padding: "40px 20px", fontFamily: theme.body, color: theme.text, transition: "background 0.6s ease",
+          direction: isRTL ? "rtl" : "ltr",
+        }}
+        onClick={() => {
+          if (!hasInteracted.current) {
+            hasInteracted.current = true;
+            setMusicEnabled(true);
+          }
+        }}
+      >
         <FloatingParticles theme={theme} />
 
         {/* Chapter banner overlay */}
