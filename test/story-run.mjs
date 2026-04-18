@@ -34,6 +34,7 @@ if (args.includes("--help")) {
   console.log(`Usage: node test/story-run.mjs [options]
   --turns N       Number of turns to run (default: 20)
   --genre GENRE   fantasy | scifi | reality | mystery (default: fantasy)
+  --lang LANG     English | Hebrew | Arabic (default: English)
   --verbose       Print story text and choices each turn
   --save FILE     Save full results to JSON file`);
   process.exit(0);
@@ -41,8 +42,15 @@ if (args.includes("--help")) {
 const argVal  = (flag, def) => { const i = args.indexOf(flag); return i !== -1 ? args[i + 1] : def; };
 const TURNS   = parseInt(argVal("--turns",  "20")) || 20;
 const GENRE   = argVal("--genre",  "fantasy");
+const LANG    = argVal("--lang",   "English");
 const VERBOSE = args.includes("--verbose");
 const SAVE    = argVal("--save", null);
+
+const VALID_LANGS = new Set(["English", "Hebrew", "Arabic"]);
+if (!VALID_LANGS.has(LANG)) {
+  console.error(`❌  Unknown language "${LANG}". Use: English | Hebrew | Arabic`);
+  process.exit(1);
+}
 
 // ── Config ───────────────────────────────────────────────────────
 const KEY      = process.env.OPENROUTER_KEY;
@@ -104,11 +112,20 @@ function validateResult(r) {
   return errs;
 }
 
+// ── Language-aware prompt helpers ────────────────────────────────
+function buildPerspectiveLine(lang) {
+  if (lang === "Hebrew")
+    return 'כתוב בגוף שני. השתמש ב"אתה", "שלך". דוגמה: "אתה שולף את חרבך וצועד אל החשיכה."';
+  if (lang === "Arabic")
+    return 'اكتب بضمير المخاطب. استخدم "أنت"، "لك". مثال: "تسلّ سيفك وتخطو نحو الظلام."';
+  return 'Write in SECOND PERSON. Use "you", "your". Example: "You draw your sword and step into the dark."';
+}
+
 // ── System prompt ─────────────────────────────────────────────────
 const SYSTEM = `You are the narrator of an interactive ${GENRE} adventure game.
 
-LANGUAGE: Respond ENTIRELY in English.
-PERSPECTIVE: Write in SECOND PERSON. Use "you", "your". Example: "You draw your sword and step into the dark."
+LANGUAGE: Respond ENTIRELY in ${LANG}. ALL story text and choices must be in ${LANG}.
+PERSPECTIVE: ${buildPerspectiveLine(LANG)}
 CHARACTER: Name: Alex, Gender: male, Age: 28, Appearance: athletic build, dark short hair, a scar on the left cheek, Skills: Swordsmanship, Stealth
 
 CONTENT: Content for ages 13+. Moderate action OK. Light tension fine.
@@ -158,12 +175,69 @@ async function callAPI(messages, attempt = 0) {
   return data?.choices?.[0]?.message?.content ?? "";
 }
 
+// ── Human-readable transcript ─────────────────────────────────────
+function buildTextReport(turnLog, storyEnded, failCount) {
+  const div  = "═".repeat(70);
+  const sep  = "─".repeat(70);
+  const lines = [];
+
+  lines.push(div);
+  lines.push(`  Story Integration Test — genre: ${GENRE}, lang: ${LANG}, ${turnLog.length} turns`);
+  lines.push(`  Model : ${MODEL}`);
+  lines.push(`  Date  : ${new Date().toLocaleString()}`);
+  lines.push(`  Story ended: ${storyEnded ? "YES (gameOver:true)" : "NO (turn limit)"}`);
+  lines.push(`  Issues: ${failCount}`);
+  lines.push(div);
+  lines.push("");
+  lines.push("SYSTEM PROMPT:");
+  lines.push(sep);
+  lines.push(SYSTEM);
+  lines.push("");
+
+  for (const entry of turnLog) {
+    lines.push(div);
+    const status = entry.ok ? "✅ OK" : `❌ FAIL`;
+    const mood   = entry.result?.mood ?? "—";
+    lines.push(`TURN ${entry.turn}  ${status}  mood: ${mood}  (${entry.elapsed})`);
+    if (!entry.ok && entry.errors?.length) lines.push(`  Issues: ${entry.errors.join("; ")}`);
+    lines.push(sep);
+
+    // Last user message sent this turn
+    const userMsg = [...(entry.sent ?? [])].reverse().find(m => m.role === "user");
+    lines.push("USER:");
+    lines.push(userMsg?.content ?? "(none)");
+    lines.push("");
+
+    if (entry.result) {
+      lines.push("LLM:");
+      lines.push(entry.result.story ?? "(no story)");
+      lines.push("");
+      if (entry.result.choices?.length) {
+        lines.push("CHOICES:");
+        entry.result.choices.forEach((c, i) => lines.push(`  ${i + 1}. ${c}`));
+      }
+      if (entry.result.rollRequired) lines.push(`\nROLL REQUIRED: ${entry.result.rollContext}`);
+      if (entry.result.chapterComplete) lines.push("\n*** CHAPTER COMPLETE ***");
+      if (entry.result.gameOver) lines.push(`\n*** GAME OVER: ${entry.result.gameOverReason} ***`);
+    } else {
+      lines.push("LLM (raw — parse failed):");
+      lines.push(entry.rawResponse ?? "(empty)");
+    }
+    lines.push("");
+  }
+
+  lines.push(div);
+  lines.push(`END OF TRANSCRIPT — ${failCount === 0 && storyEnded ? "PASSED" : "FAILED"}`);
+  lines.push(div);
+  return lines.join("\n");
+}
+
 // ── Main ──────────────────────────────────────────────────────────
 async function run() {
   const bar = "─".repeat(72);
   console.log(`\n🎮  Story Integration Test`);
   console.log(`    Model : ${MODEL}`);
-  console.log(`    Genre : ${GENRE}   |   Turns : ${TURNS}`);
+  console.log(`    Genre : ${GENRE}   |   Lang : ${LANG}   |   Turns : ${TURNS}`);
   console.log(bar);
   console.log("Turn  Result     Mood           Ch?  Roll?  Choices  GameOver");
   console.log(bar);
@@ -196,7 +270,8 @@ async function run() {
 
     if (!result) {
       const snippet = raw.slice(0, 100).replace(/\n/g, " ");
-      const entry = { turn, ok: false, error: "JSON parse failed", raw, elapsed };
+      const sentMessages = [{ role: "system", content: SYSTEM }, ...messages];
+      const entry = { turn, ok: false, error: "JSON parse failed", sent: sentMessages, rawResponse: raw, elapsed };
       turnLog.push(entry);
       failCount++;
       console.log(`  ${String(turn).padStart(2)}  ❌ PARSE    raw: ${snippet}`);
@@ -228,7 +303,9 @@ async function run() {
       console.log();
     }
 
-    turnLog.push({ turn, ok, errors, elapsed, result });
+    // Snapshot the messages sent this turn (system prompt + conversation so far)
+    const sentMessages = [{ role: "system", content: SYSTEM }, ...messages];
+    turnLog.push({ turn, ok, errors, elapsed, sent: sentMessages, rawResponse: raw, result });
 
     // Advance conversation history (keep it lean — no full story text)
     messages.push({ role: "assistant", content: JSON.stringify({
@@ -241,11 +318,21 @@ async function run() {
       break;
     }
 
+    // Phase hint appended to next user message to mirror the app's CLIMAX/FINALE pacing
+    let phaseHint = "";
+    const remaining = TURNS - turn;
+    if (remaining === 0) {
+      phaseHint = "\n\n[STORY PHASE: FINALE — This is the last turn. Deliver a satisfying conclusion and set gameOver:true.]";
+    } else if (remaining === 1) {
+      phaseHint = "\n\n[STORY PHASE: CLIMAX — Bring all threads to a head. Next turn will be the finale.]";
+    } else if (remaining <= Math.ceil(TURNS * 0.2)) {
+      phaseHint = `\n\n[STORY PHASE: LATE — ${remaining} turns remaining. Push toward the climax.]`;
+    }
+
     if (result.choices?.length > 0) {
-      // Always pick the first choice to drive the story forward
-      messages.push({ role: "user", content: `Player chose: "${result.choices[0]}"` });
+      messages.push({ role: "user", content: `Player chose: "${result.choices[0]}"${phaseHint}` });
     } else {
-      messages.push({ role: "user", content: `Player chose: "Continue"` });
+      messages.push({ role: "user", content: `Player chose: "Continue"${phaseHint}` });
     }
 
     // Brief pause to avoid hammering the API
@@ -269,8 +356,14 @@ async function run() {
   console.log(passed_overall ? "\n✅  PASSED\n" : "\n❌  FAILED\n");
 
   if (SAVE) {
+    // JSON — full machine-readable data
     fs.writeFileSync(SAVE, JSON.stringify({ genre: GENRE, turns: TURNS, storyEnded, failCount, turnLog }, null, 2));
     console.log(`Results saved to ${SAVE}`);
+
+    // TXT — human-readable conversation transcript
+    const txtPath = SAVE.replace(/\.json$/i, "") + ".txt";
+    fs.writeFileSync(txtPath, buildTextReport(turnLog, storyEnded, failCount));
+    console.log(`Transcript saved to ${txtPath}`);
   }
 
   process.exit(passed_overall ? 0 : 1);

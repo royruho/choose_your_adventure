@@ -1,32 +1,27 @@
-version: "3.9"
-
 services:
-
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
-    env_file:
-      - .env                        # reads LLM_ENDPOINT, LLM_API_KEY, etc.
-    environment:
-      - DATABASE_URL=sqlite:///./data/stories.db
+  proxy:
+    image: node:20-alpine
+    working_dir: /app
     volumes:
-      - db_data:/app/data           # persists the SQLite file between restarts
-    restart: unless-stopped
+      - .:/app
+    ports:
+      - "3001:3001"
+    command: node api/dev-server.js
+    env_file: .env
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: node:20-alpine
+    working_dir: /app/frontend
+    volumes:
+      - ./frontend:/app/frontend
+      - frontend_nm:/app/frontend/node_modules
     ports:
       - "5173:5173"
-    environment:
-      - VITE_API_URL=http://localhost:8000
     depends_on:
-      - backend
-    restart: unless-stopped
+      - proxy
+    environment:
+      - PROXY_TARGET=http://proxy:3001
+    command: sh -c "npm install && npm run dev"
 
 volumes:
-  db_data:
+  frontend_nm:

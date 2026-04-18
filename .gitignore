@@ -37,6 +37,8 @@ htmlcov/
 .coverage
 .cache/
 pytest_cache/
+results*.json
+results*.txt
 
 # Claude Code
 .claude/

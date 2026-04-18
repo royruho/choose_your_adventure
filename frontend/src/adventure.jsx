@@ -251,14 +251,14 @@ function randomAppearanceStr() {
 //   2. Open a track page, right-click the play button → Inspect → Network tab → look for .mp3 request
 //   3. Copy the full https://cdn.pixabay.com/audio/... URL and paste it below
 const MUSIC_TRACKS = {
-  peaceful:   "",
-  tense:      "",
-  action:     "",
-  dramatic:   "",
-  sad:        "",
-  triumphant: "",
-  mysterious: "",
-  neutral:    "",
+  peaceful:   "https://cdn.pixabay.com/download/audio/2023/05/16/audio_0636f970ca.mp3?filename=music_for_videos-sad-violin-150146.mp3",
+  tense:      "https://cdn.pixabay.com/download/audio/2026/02/12/audio_7d514da87c.mp3?filename=delosound-background-music-483780.mp3",
+  action:     "https://cdn.pixabay.com/download/audio/2025/10/06/audio_6718ad291f.mp3?filename=tatamusic-racing-speed-action-music-416097.mp3",
+  dramatic:   "https://cdn.pixabay.com/download/audio/2025/10/06/audio_6718ad291f.mp3?filename=tatamusic-racing-speed-action-music-416097.mp3",
+  sad:        "https://cdn.pixabay.com/download/audio/2023/05/16/audio_0636f970ca.mp3?filename=music_for_videos-sad-violin-150146.mp3",
+  triumphant: "https://cdn.pixabay.com/download/audio/2026/02/18/audio_a52af36248.mp3?filename=sonican-victory-486914.mp3",
+  mysterious: "https://cdn.pixabay.com/download/audio/2026/02/12/audio_7d514da87c.mp3?filename=delosound-background-music-483780.mp3",
+  neutral:    "https://cdn.pixabay.com/download/audio/2026/02/12/audio_7d514da87c.mp3?filename=delosound-background-music-483780.mp3",
 };
 
 function crossfadeTo(url, targetVol, audioRef, currentUrlRef, fadeRef) {
@@ -841,7 +841,7 @@ rollContext: Short phrase shown to player before rolling (e.g. "pick the ancient
 chapterComplete: true ONLY when the single chapter goal is conclusively achieved.
 chapterProgress: Update every turn — achieved: specific milestones completed toward the one chapter goal (cumulative, carry forward); clues: hints/info the player has discovered that help reach the goal (cumulative).
 mood: Emotional tone of the story text just returned. One of: peaceful, tense, action, dramatic, sad, triumphant, mysterious, neutral.
-Provide 2-5 meaningfully different choices.`;
+Provide 2-5 meaningfully different choices. ALWAYS include at least 1 choice unless gameOver is true.`;
   }, [config, character, turnCount, storySummary, chapterBrief, chapterNumber, totalChapters, stats]);
 
   // ─── API CALL ─────────────────────────────────────────────────
@@ -1000,7 +1000,7 @@ Provide 2-5 meaningfully different choices.`;
     const result = await callAPI(firstMessage, { systemPrompt });
     if (!result) { setLoading(false); return; } // key modal shown
     setStoryLog([{ role: "narrator", text: result.story }]);
-    setChoices(result.choices || []);
+    setChoices(result.choices?.length ? result.choices : (result.gameOver ? [] : [t("continue_")]));
     if (result.stats && finalCfg.trackStats) setStats(result.stats);
     setNextRollRequired({ required: !!result.rollRequired, context: result.rollContext || "" });
     setCurrentMood(result.mood || "peaceful");
@@ -1122,7 +1122,7 @@ Provide 2-5 meaningfully different choices.`;
     if (!result) { setLoading(false); return; } // key modal shown
 
     setStoryLog(prev => [...prev, { role: "narrator", text: result.story }]);
-    setChoices(result.choices || []);
+    setChoices(result.choices?.length ? result.choices : (result.gameOver ? [] : [t("continue_")]));
     if (result.stats && config.trackStats) setStats(result.stats);
     if (result.gameOver) {
       setGameOver(true);
@@ -1622,8 +1622,8 @@ Provide 2-5 meaningfully different choices.`;
           <div ref={storyEndRef} />
         </div>
 
-        {/* Choices panel */}
-        {!loading && !gameOver && choices.length > 0 && (
+        {/* Choices panel — always show input when game is active, even if LLM returned no suggestions */}
+        {!loading && !gameOver && (
           <div style={{
             background: theme.bgCard, backdropFilter: "blur(20px)", border: `1px solid ${theme.border}`,
             borderRadius: 16, padding: "18px 24px", marginTop: 12, boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
