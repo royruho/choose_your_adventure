@@ -1,5 +1,11 @@
 {
   "name": "choose-your-adventure",
   "version": "1.0.0",
-  "private": true
+  "private": true,
+  "scripts": {
+    "test:story":         "node test/story-run.mjs",
+    "test:story:verbose": "node test/story-run.mjs --verbose",
+    "test:story:mystery": "node test/story-run.mjs --genre mystery",
+    "test:story:fast":    "node test/story-run.mjs --turns 5"
+  }
 }
