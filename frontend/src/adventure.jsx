@@ -3,128 +3,168 @@ import { api, saveUserKey, clearUserKey, hasUserKey, FREE_TURN_LIMIT } from "./a
 
 // ─── TRANSLATIONS ───────────────────────────────────────────────
 const TR = {
-  adventureAwaits:  { English: "Adventure Awaits", Hebrew: "הרפתקה מחכה" },
-  stepOf:           { English: "Step {c} of {t}", Hebrew: "שלב {c} מתוך {t}" },
-  chooseWorld:      { English: "Choose Your World", Hebrew: "בחר את העולם שלך" },
-  chooseWorldSub:   { English: "Select the genre for your adventure", Hebrew: "בחר את הז'אנר להרפתקה שלך" },
-  language:         { English: "Language", Hebrew: "שפה" },
-  languageSub:      { English: "Choose the language for your adventure", Hebrew: "בחר את השפה להרפתקה שלך" },
-  contentRating:    { English: "Content Rating", Hebrew: "דירוג תוכן" },
-  contentRatingSub: { English: "Set appropriate content levels", Hebrew: "הגדר רמות תוכן מתאימות" },
-  kids:             { English: "Kids (8+)", Hebrew: "ילדים (8+)" },
-  kidsSub:          { English: "Light-hearted, no violence or romance, simple vocabulary", Hebrew: "קליל, ללא אלימות או רומנטיקה, אוצר מילים פשוט" },
-  teen:             { English: "Teen (13+)", Hebrew: "נוער (13+)" },
-  teenSub:          { English: "Moderate action, light tension, engaging vocabulary", Hebrew: "אקשן מתון, מתח קל, אוצר מילים מרתק" },
-  adult:            { English: "Adult (18+)", Hebrew: "מבוגרים (18+)" },
-  adultSub:         { English: "Full range of themes, vivid descriptions, mature content", Hebrew: "מגוון נושאים מלא, תיאורים חיים, תוכן בוגר" },
-  storyDuration:    { English: "Adventure Length", Hebrew: "אורך ההרפתקה" },
-  storyDurationSub: { English: "How many turns should the adventure last?", Hebrew: "כמה תורות תימשך ההרפתקה?" },
-  perspective:      { English: "Narrative Perspective", Hebrew: "נקודת מבט" },
-  perspectiveSub:   { English: "How should the story refer to you?", Hebrew: "איך הסיפור יתייחס אליך?" },
-  firstPerson:      { English: "First Person", Hebrew: "גוף ראשון" },
-  firstPersonEx:    { English: "\"I drew my sword and stepped into the dark\"", Hebrew: "\"שלפתי את חרבי וצעדתי אל החושך\"" },
-  secondPerson:     { English: "Second Person", Hebrew: "גוף שני" },
-  secondPersonEx:   { English: "\"You draw your sword and step into the dark\"", Hebrew: "\"אתה שולף את חרבך וצועד אל החושך\"" },
-  storyPacing:      { English: "Story Pacing", Hebrew: "קצב הסיפור" },
-  storyPacingSub:   { English: "How detailed should each story beat be?", Hebrew: "כמה מפורט יהיה כל חלק בסיפור?" },
-  short:            { English: "Quick & Punchy", Hebrew: "מהיר וקצר" },
-  shortSub:         { English: "1-2 sentences per beat — fast-paced action", Hebrew: "1-2 משפטים — קצב מהיר" },
-  medium:           { English: "Balanced", Hebrew: "מאוזן" },
-  mediumSub:        { English: "A paragraph per beat — good mix of action and description", Hebrew: "פסקה אחת — שילוב טוב של אקשן ותיאור" },
-  long:             { English: "Rich & Immersive", Hebrew: "עשיר וסוחף" },
-  longSub:          { English: "2-3 paragraphs per beat — deep atmospheric storytelling", Hebrew: "2-3 פסקאות — סיפור אטמוספרי עמוק" },
-  gameRules:        { English: "Game Rules", Hebrew: "חוקי המשחק" },
-  gameRulesSub:     { English: "Configure how your adventure plays out", Hebrew: "הגדר איך ההרפתקה שלך תתנהל" },
-  canDie:           { English: "Can your character die?", Hebrew: "האם הדמות שלך יכולה למות?" },
-  yesDeath:         { English: "Yes, risk of death", Hebrew: "כן, סיכון למוות" },
-  noDeath:          { English: "No, always continue", Hebrew: "לא, תמיד להמשיך" },
-  trackStatsQ:      { English: "Track stats (health, inventory)?", Hebrew: "לעקוב אחר נתונים (בריאות, מלאי)?" },
-  yesStats:         { English: "Yes, track stats", Hebrew: "כן, לעקוב" },
-  noStats:          { English: "No, pure narrative", Hebrew: "לא, סיפור בלבד" },
-  storySeed:        { English: "Story Seed", Hebrew: "זרע הסיפור" },
-  storySeedSub:     { English: "Optionally describe a setting, scenario, or theme (or leave blank for a surprise)", Hebrew: "תאר סביבה, תרחיש או נושא (או השאר ריק להפתעה)" },
-  storySeedPH:      { English: "e.g. 'A haunted space station orbiting a dying star...'", Hebrew: "למשל: 'תחנת חלל רדופה סביב כוכב גוסס...'" },
-  createChar:       { English: "Create Your Character", Hebrew: "צור את הדמות שלך" },
-  createCharSub:    { English: "Who are you in this story?", Hebrew: "מי אתה בסיפור הזה?" },
-  name:             { English: "Name", Hebrew: "שם" },
-  namePH:           { English: "Your character's name", Hebrew: "שם הדמות שלך" },
-  age:              { English: "Age", Hebrew: "גיל" },
-  agePH:            { English: "e.g. 28", Hebrew: "למשל 28" },
-  gender:           { English: "Gender", Hebrew: "מגדר" },
-  male:             { English: "Male", Hebrew: "זכר" },
-  female:           { English: "Female", Hebrew: "נקבה" },
-  nonBinary:        { English: "Non-binary", Hebrew: "לא בינארי" },
-  other:            { English: "Other", Hebrew: "אחר" },
-  appearance:       { English: "Appearance", Hebrew: "מראה" },
-  appearancePH:     { English: "Describe your character's look...", Hebrew: "תאר את המראה של הדמות שלך..." },
-  skills:           { English: "Skills", Hebrew: "כישורים" },
-  skillsSub:        { English: "(pick up to 3)", Hebrew: "(בחר עד 3)" },
-  beginAdventure:   { English: "Begin Adventure", Hebrew: "התחל הרפתקה" },
-  continue_:        { English: "Continue", Hebrew: "המשך" },
-  back:             { English: "← Back", Hebrew: "חזרה →" },
-  whatDoYouDo:      { English: "What do you do?", Hebrew: "מה אתה עושה?", Arabic: "ماذا تفعل؟" },
-  typeAction:       { English: "Write your action...", Hebrew: "כתוב את הפעולה שלך...", Arabic: "اكتب فعلك..." },
-  orChoose:         { English: "or pick a suggestion", Hebrew: "או בחר הצעה", Arabic: "أو اختر اقتراحاً" },
-  go:               { English: "Go", Hebrew: "קדימה", Arabic: "انطلق" },
-  stats:            { English: "Stats", Hebrew: "נתונים" },
-  health:           { English: "Health", Hebrew: "בריאות" },
-  inventory:        { English: "Inventory", Hebrew: "מלאי" },
-  relationships:    { English: "Relationships", Hebrew: "יחסים" },
-  adventureOver:    { English: "Adventure Over", Hebrew: "ההרפתקה הסתיימה" },
-  newAdventure:     { English: "New Adventure", Hebrew: "הרפתקה חדשה" },
-  storyUnfolds:     { English: "The story unfolds...", Hebrew: "הסיפור מתגלה..." },
-  turn:             { English: "Turn", Hebrew: "תור" },
-  sAdventure:       { English: "'s Adventure", Hebrew: " - הרפתקה" },
-  exportStory:      { English: "Export Story", Hebrew: "ייצא סיפור" },
-  saveGame:         { English: "Save Game", Hebrew: "שמור משחק" },
-  loadGame:         { English: "Load Game", Hebrew: "טען משחק" },
-  loadGameSub:      { English: "Resume a saved adventure", Hebrew: "המשך הרפתקה שמורה" },
-  loadError:        { English: "Could not load save file — file may be corrupted.", Hebrew: "לא ניתן לטעון את קובץ השמירה — הקובץ עלול להיות פגום." },
-  fantasy:          { English: "Fantasy", Hebrew: "פנטזיה" },
-  scifi:            { English: "Sci-Fi", Hebrew: "מדע בדיוני" },
-  reality:          { English: "Reality", Hebrew: "מציאות" },
-  mystery:          { English: "Mystery", Hebrew: "מסתורין" },
+  adventureAwaits:  { English: "Adventure Awaits", Hebrew: "הרפתקה מחכה", Arabic: "تنتظرك مغامرة", Portuguese: "A Aventura Aguarda" },
+  stepOf:           { English: "Step {c} of {t}", Hebrew: "שלב {c} מתוך {t}", Arabic: "الخطوة {c} من {t}", Portuguese: "Etapa {c} de {t}" },
+  chooseWorld:      { English: "Choose Your World", Hebrew: "בחר את העולם שלך", Arabic: "اختر عالمك", Portuguese: "Escolha seu Mundo" },
+  chooseWorldSub:   { English: "Select the genre for your adventure", Hebrew: "בחר את הז'אנר להרפתקה שלך", Arabic: "حدد النوع لمغامرتك", Portuguese: "Selecione o gênero da sua aventura" },
+  language:         { English: "Language", Hebrew: "שפה", Arabic: "اللغة", Portuguese: "Idioma" },
+  languageSub:      { English: "Choose the language for your adventure", Hebrew: "בחר את השפה להרפתקה שלך", Arabic: "اختر لغة مغامرتك", Portuguese: "Escolha o idioma da sua aventura" },
+  contentRating:    { English: "Content Rating", Hebrew: "דירוג תוכן", Arabic: "تصنيف المحتوى", Portuguese: "Classificação de Conteúdo" },
+  contentRatingSub: { English: "Set appropriate content levels", Hebrew: "הגדר רמות תוכן מתאימות", Arabic: "حدد مستويات المحتوى المناسبة", Portuguese: "Defina os níveis apropriados de conteúdo" },
+  kids:             { English: "Kids (8+)", Hebrew: "ילדים (8+)", Arabic: "أطفال (8+)", Portuguese: "Crianças (8+)" },
+  kidsSub:          { English: "Light-hearted, no violence or romance, simple vocabulary", Hebrew: "קליל, ללא אלימות או רומנטיקה, אוצר מילים פשוט", Arabic: "خفيف، بدون عنف أو رومانسية، مفردات بسيطة", Portuguese: "Leve, sem violência nem romance, vocabulário simples" },
+  teen:             { English: "Teen (13+)", Hebrew: "נוער (13+)", Arabic: "مراهقون (13+)", Portuguese: "Adolescente (13+)" },
+  teenSub:          { English: "Moderate action, light tension, engaging vocabulary", Hebrew: "אקשן מתון, מתח קל, אוצר מילים מרתק", Arabic: "حركة متوسطة، توتر خفيف، مفردات جذابة", Portuguese: "Ação moderada, tensão leve, vocabulário envolvente" },
+  adult:            { English: "Adult (18+)", Hebrew: "מבוגרים (18+)", Arabic: "بالغون (18+)", Portuguese: "Adulto (18+)" },
+  adultSub:         { English: "Full range of themes, vivid descriptions, mature content", Hebrew: "מגוון נושאים מלא, תיאורים חיים, תוכן בוגר", Arabic: "مجموعة كاملة من المواضيع، أوصاف حية، محتوى ناضج", Portuguese: "Temas completos, descrições vívidas, conteúdo adulto" },
+  storyDuration:    { English: "Adventure Length", Hebrew: "אורך ההרפתקה", Arabic: "طول المغامرة", Portuguese: "Duração da Aventura" },
+  storyDurationSub: { English: "How many turns should the adventure last?", Hebrew: "כמה תורות תימשך ההרפתקה?", Arabic: "كم عدد الدورات التي ستستغرقها المغامرة؟", Portuguese: "Quantos turnos durará a aventura?" },
+  perspective:      { English: "Narrative Perspective", Hebrew: "נקודת מבט", Arabic: "منظور السرد", Portuguese: "Perspectiva Narrativa" },
+  perspectiveSub:   { English: "How should the story refer to you?", Hebrew: "איך הסיפור יתייחס אליך?", Arabic: "كيف يجب أن تشير القصة إليك؟", Portuguese: "Como a história deve se referir a você?" },
+  firstPerson:      { English: "First Person", Hebrew: "גוף ראשון", Arabic: "ضمير المتكلم", Portuguese: "Primeira Pessoa" },
+  firstPersonEx:    { English: "\"I drew my sword and stepped into the dark\"", Hebrew: "\"שלפתי את חרבי וצעדתי אל החושך\"", Arabic: "\"سللت سيفي وخطوت إلى الظلام\"", Portuguese: "\"Desembainhei minha espada e avancei para a escuridão\"" },
+  secondPerson:     { English: "Second Person", Hebrew: "גוף שני", Arabic: "ضمير المخاطب", Portuguese: "Segunda Pessoa" },
+  secondPersonEx:   { English: "\"You draw your sword and step into the dark\"", Hebrew: "\"אתה שולף את חרבך וצועד אל החושך\"", Arabic: "\"تسلّ سيفك وتخطو نحو الظلام\"", Portuguese: "\"Você desembainha sua espada e avança para a escuridão\"" },
+  storyPacing:      { English: "Story Pacing", Hebrew: "קצב הסיפור", Arabic: "إيقاع القصة", Portuguese: "Ritmo da História" },
+  storyPacingSub:   { English: "How detailed should each story beat be?", Hebrew: "כמה מפורט יהיה כל חלק בסיפור?", Arabic: "ما مدى تفصيل كل جزء من القصة؟", Portuguese: "Quão detalhado deve ser cada trecho da história?" },
+  short:            { English: "Quick & Punchy", Hebrew: "מהיר וקצר", Arabic: "سريع ومختصر", Portuguese: "Rápido e Direto" },
+  shortSub:         { English: "1-2 sentences per beat — fast-paced action", Hebrew: "1-2 משפטים — קצב מהיר", Arabic: "1-2 جملة لكل جزء — حركة سريعة", Portuguese: "1-2 frases por trecho — ação acelerada" },
+  medium:           { English: "Balanced", Hebrew: "מאוזן", Arabic: "متوازن", Portuguese: "Equilibrado" },
+  mediumSub:        { English: "A paragraph per beat — good mix of action and description", Hebrew: "פסקה אחת — שילוב טוב של אקשן ותיאור", Arabic: "فقرة واحدة لكل جزء — مزيج جيد من الحركة والوصف", Portuguese: "Um parágrafo por trecho — boa mistura de ação e descrição" },
+  long:             { English: "Rich & Immersive", Hebrew: "עשיר וסוחף", Arabic: "غني وغامر", Portuguese: "Rico e Imersivo" },
+  longSub:          { English: "2-3 paragraphs per beat — deep atmospheric storytelling", Hebrew: "2-3 פסקאות — סיפור אטמוספרי עמוק", Arabic: "2-3 فقرات لكل جزء — سرد أجواء عميق", Portuguese: "2-3 parágrafos por trecho — narrativa atmosférica e profunda" },
+  gameRules:        { English: "Game Rules", Hebrew: "חוקי המשחק", Arabic: "قواعد اللعبة", Portuguese: "Regras do Jogo" },
+  gameRulesSub:     { English: "Configure how your adventure plays out", Hebrew: "הגדר איך ההרפתקה שלך תתנהל", Arabic: "حدد كيف ستسير مغامرتك", Portuguese: "Configure como sua aventura será jogada" },
+  canDie:           { English: "Can your character die?", Hebrew: "האם הדמות שלך יכולה למות?", Arabic: "هل يمكن أن تموت شخصيتك؟", Portuguese: "Seu personagem pode morrer?" },
+  yesDeath:         { English: "Yes, risk of death", Hebrew: "כן, סיכון למוות", Arabic: "نعم، خطر الموت", Portuguese: "Sim, risco de morte" },
+  noDeath:          { English: "No, always continue", Hebrew: "לא, תמיד להמשיך", Arabic: "لا، الاستمرار دائماً", Portuguese: "Não, sempre continuar" },
+  trackStatsQ:      { English: "Track stats (health, inventory)?", Hebrew: "לעקוב אחר נתונים (בריאות, מלאי)?", Arabic: "تتبع الإحصائيات (الصحة، المخزون)؟", Portuguese: "Acompanhar stats (vida, inventário)?" },
+  yesStats:         { English: "Yes, track stats", Hebrew: "כן, לעקוב", Arabic: "نعم، التتبع", Portuguese: "Sim, acompanhar" },
+  noStats:          { English: "No, pure narrative", Hebrew: "לא, סיפור בלבד", Arabic: "لا، سرد فقط", Portuguese: "Não, apenas narrativa" },
+  storySeed:        { English: "Story Seed", Hebrew: "זרע הסיפור", Arabic: "بذرة القصة", Portuguese: "Semente da História" },
+  storySeedSub:     { English: "Optionally describe a setting, scenario, or theme (or leave blank for a surprise)", Hebrew: "תאר סביבה, תרחיש או נושא (או השאר ריק להפתעה)", Arabic: "اختيارياً صف بيئة أو سيناريو أو موضوعاً (أو اتركه فارغاً للمفاجأة)", Portuguese: "Opcionalmente descreva um cenário, situação ou tema (ou deixe em branco para uma surpresa)" },
+  storySeedPH:      { English: "e.g. 'A haunted space station orbiting a dying star...'", Hebrew: "למשל: 'תחנת חלל רדופה סביב כוכב גוסס...'", Arabic: "مثال: 'محطة فضائية مسكونة تدور حول نجم محتضر...'", Portuguese: "ex: 'Uma estação espacial assombrada orbitando uma estrela moribunda...'" },
+  createChar:       { English: "Create Your Character", Hebrew: "צור את הדמות שלך", Arabic: "أنشئ شخصيتك", Portuguese: "Crie seu Personagem" },
+  createCharSub:    { English: "Who are you in this story?", Hebrew: "מי אתה בסיפור הזה?", Arabic: "من أنت في هذه القصة؟", Portuguese: "Quem é você nesta história?" },
+  name:             { English: "Name", Hebrew: "שם", Arabic: "الاسم", Portuguese: "Nome" },
+  namePH:           { English: "Your character's name", Hebrew: "שם הדמות שלך", Arabic: "اسم شخصيتك", Portuguese: "Nome do seu personagem" },
+  age:              { English: "Age", Hebrew: "גיל", Arabic: "العمر", Portuguese: "Idade" },
+  agePH:            { English: "e.g. 28", Hebrew: "למשל 28", Arabic: "مثال: 28", Portuguese: "ex: 28" },
+  gender:           { English: "Gender", Hebrew: "מגדר", Arabic: "الجنس", Portuguese: "Gênero" },
+  male:             { English: "Male", Hebrew: "זכר", Arabic: "ذكر", Portuguese: "Masculino" },
+  female:           { English: "Female", Hebrew: "נקבה", Arabic: "أنثى", Portuguese: "Feminino" },
+  nonBinary:        { English: "Non-binary", Hebrew: "לא בינארי", Arabic: "غير ثنائي", Portuguese: "Não-binário" },
+  other:            { English: "Other", Hebrew: "אחר", Arabic: "آخر", Portuguese: "Outro" },
+  appearance:       { English: "Appearance", Hebrew: "מראה", Arabic: "المظهر", Portuguese: "Aparência" },
+  appearancePH:     { English: "Describe your character's look...", Hebrew: "תאר את המראה של הדמות שלך...", Arabic: "صف مظهر شخصيتك...", Portuguese: "Descreva a aparência do seu personagem..." },
+  skills:           { English: "Skills", Hebrew: "כישורים", Arabic: "المهارات", Portuguese: "Habilidades" },
+  skillsSub:        { English: "(pick up to 3)", Hebrew: "(בחר עד 3)", Arabic: "(اختر حتى 3)", Portuguese: "(escolha até 3)" },
+  beginAdventure:   { English: "Begin Adventure", Hebrew: "התחל הרפתקה", Arabic: "ابدأ المغامرة", Portuguese: "Começar Aventura" },
+  continue_:        { English: "Continue", Hebrew: "המשך", Arabic: "متابعة", Portuguese: "Continuar" },
+  back:             { English: "← Back", Hebrew: "חזרה →", Arabic: "رجوع →", Portuguese: "← Voltar" },
+  whatDoYouDo:      { English: "What do you do?", Hebrew: "מה אתה עושה?", Arabic: "ماذا تفعل؟", Portuguese: "O que você faz?" },
+  typeAction:       { English: "Write your action...", Hebrew: "כתוב את הפעולה שלך...", Arabic: "اكتب فعلك...", Portuguese: "Escreva sua ação..." },
+  orChoose:         { English: "or pick a suggestion", Hebrew: "או בחר הצעה", Arabic: "أو اختر اقتراحاً", Portuguese: "ou escolha uma sugestão" },
+  go:               { English: "Go", Hebrew: "קדימה", Arabic: "انطلق", Portuguese: "Ir" },
+  stats:            { English: "Stats", Hebrew: "נתונים", Arabic: "الإحصائيات", Portuguese: "Status" },
+  health:           { English: "Health", Hebrew: "בריאות", Arabic: "الصحة", Portuguese: "Vida" },
+  inventory:        { English: "Inventory", Hebrew: "מלאי", Arabic: "المخزون", Portuguese: "Inventário" },
+  relationships:    { English: "Relationships", Hebrew: "יחסים", Arabic: "العلاقات", Portuguese: "Relações" },
+  adventureOver:    { English: "Adventure Over", Hebrew: "ההרפתקה הסתיימה", Arabic: "انتهت المغامرة", Portuguese: "Aventura Encerrada" },
+  newAdventure:     { English: "New Adventure", Hebrew: "הרפתקה חדשה", Arabic: "مغامرة جديدة", Portuguese: "Nova Aventura" },
+  storyUnfolds:     { English: "The story unfolds...", Hebrew: "הסיפור מתגלה...", Arabic: "القصة تتكشف...", Portuguese: "A história se desenrola..." },
+  turn:             { English: "Turn", Hebrew: "תור", Arabic: "الدورة", Portuguese: "Turno" },
+  sAdventure:       { English: "'s Adventure", Hebrew: " - הרפתקה", Arabic: " - مغامرة", Portuguese: " - Aventura" },
+  exportStory:      { English: "Export Story", Hebrew: "ייצא סיפור", Arabic: "تصدير القصة", Portuguese: "Exportar História" },
+  saveGame:         { English: "Save Game", Hebrew: "שמור משחק", Arabic: "حفظ اللعبة", Portuguese: "Salvar Jogo" },
+  loadGame:         { English: "Load Game", Hebrew: "טען משחק", Arabic: "تحميل اللعبة", Portuguese: "Carregar Jogo" },
+  loadGameSub:      { English: "Resume a saved adventure", Hebrew: "המשך הרפתקה שמורה", Arabic: "استأنف مغامرة محفوظة", Portuguese: "Retomar uma aventura salva" },
+  loadError:        { English: "Could not load save file — file may be corrupted.", Hebrew: "לא ניתן לטעון את קובץ השמירה — הקובץ עלול להיות פגום.", Arabic: "لا يمكن تحميل ملف الحفظ — قد يكون الملف تالفاً.", Portuguese: "Não foi possível carregar o arquivo salvo — o arquivo pode estar corrompido." },
+  fantasy:          { English: "Fantasy", Hebrew: "פנטזיה", Arabic: "فانتازيا", Portuguese: "Fantasia" },
+  scifi:            { English: "Sci-Fi", Hebrew: "מדע בדיוני", Arabic: "خيال علمي", Portuguese: "Ficção Científica" },
+  reality:          { English: "Reality", Hebrew: "מציאות", Arabic: "واقع", Portuguese: "Realidade" },
+  mystery:          { English: "Mystery", Hebrew: "מסתורין", Arabic: "غموض", Portuguese: "Mistério" },
   // ── Dice & chapters ──
-  chapterLabel:     { English: "Chapter", Hebrew: "פרק" },
-  of:               { English: "of", Hebrew: "מתוך" },
-  fateCheck:        { English: "Fate check required:", Hebrew: "נדרשת בדיקת גורל:" },
-  rollBtn:          { English: "Roll the Dice!", Hebrew: "הטל קוביה!" },
-  rollingAnim:      { English: "Rolling...", Hebrew: "מטיל..." },
-  continueAfterRoll:{ English: "Continue →", Hebrew: "← המשך" },
-  critFail:         { English: "Critical Failure", Hebrew: "כישלון חרוץ" },
-  minorFail:        { English: "Setback", Hebrew: "מכשול" },
-  partSuccess:      { English: "Partial Success", Hebrew: "הצלחה חלקית" },
-  critSuccess:      { English: "Critical Success!", Hebrew: "הצלחה מוחלטת!" },
-  skillBonusApplied:{ English: "Skill Bonus — rolled twice, kept highest", Hebrew: "בונוס כישור — הוטל פעמיים, נשמר הגבוה" },
-  rollRequired:     { English: "Next action may require a fate check", Hebrew: "הפעולה הבאה עשויה לדרוש בדיקת גורל" },
+  chapterLabel:     { English: "Chapter", Hebrew: "פרק", Arabic: "الفصل", Portuguese: "Capítulo" },
+  of:               { English: "of", Hebrew: "מתוך", Arabic: "من", Portuguese: "de" },
+  fateCheck:        { English: "Fate check required:", Hebrew: "נדרשת בדיקת גורל:", Arabic: "فحص القدر مطلوب:", Portuguese: "Verificação do destino necessária:" },
+  rollBtn:          { English: "Roll the Dice!", Hebrew: "הטל קוביה!", Arabic: "ارمِ النرد!", Portuguese: "Jogue os Dados!" },
+  rollingAnim:      { English: "Rolling...", Hebrew: "מטיל...", Arabic: "جارٍ الرمي...", Portuguese: "Rolando..." },
+  continueAfterRoll:{ English: "Continue →", Hebrew: "← המשך", Arabic: "← متابعة", Portuguese: "Continuar →" },
+  critFail:         { English: "Critical Failure", Hebrew: "כישלון חרוץ", Arabic: "فشل ذريع", Portuguese: "Falha Crítica" },
+  minorFail:        { English: "Setback", Hebrew: "מכשול", Arabic: "انتكاسة", Portuguese: "Contratempo" },
+  partSuccess:      { English: "Partial Success", Hebrew: "הצלחה חלקית", Arabic: "نجاح جزئي", Portuguese: "Sucesso Parcial" },
+  critSuccess:      { English: "Critical Success!", Hebrew: "הצלחה מוחלטת!", Arabic: "نجاح استثنائي!", Portuguese: "Sucesso Crítico!" },
+  skillBonusApplied:{ English: "Skill Bonus — rolled twice, kept highest", Hebrew: "בונוס כישור — הוטל פעמיים, נשמר הגבוה", Arabic: "مكافأة مهارة — رُمي مرتين واحتُفظ بالأعلى", Portuguese: "Bônus de Habilidade — rolado duas vezes, maior mantido" },
+  rollRequired:     { English: "Next action may require a fate check", Hebrew: "הפעולה הבאה עשויה לדרוש בדיקת גורל", Arabic: "قد يتطلب الفعل التالي فحص قدر", Portuguese: "A próxima ação pode exigir uma verificação do destino" },
   // ── Key modal (shown at turn 20) ──
-  keyModalTitle:    { English: "Continue Your Adventure", Hebrew: "המשך את ההרפתקה שלך", Arabic: "تابع مغامرتك" },
-  keyModalSub:      { English: "You've used your 20 free turns. Add a free OpenRouter key to keep playing — takes 2 minutes.", Hebrew: "השתמשת ב-20 תורות החינמיות. הוסף מפתח OpenRouter חינמי כדי להמשיך — לוקח 2 דקות.", Arabic: "لقد استخدمت 20 دورة مجانية. أضف مفتاح OpenRouter مجاناً لمواصلة اللعب — يستغرق دقيقتين." },
-  keyPlaceholder:   { English: "Paste your OpenRouter key (starts with sk-or-...)", Hebrew: "הדבק את מפתח ה-OpenRouter (מתחיל ב-sk-or-...)", Arabic: "الصق مفتاح OpenRouter (يبدأ بـ sk-or-...)" },
-  keyValidate:      { English: "Validate & Continue", Hebrew: "אמת והמשך", Arabic: "تحقق وتابع" },
-  keyValidating:    { English: "Validating...", Hebrew: "מאמת...", Arabic: "جارٍ التحقق..." },
-  keyHowTo:         { English: "How to get a free OpenRouter key", Hebrew: "איך מקבלים מפתח OpenRouter חינמי", Arabic: "كيف تحصل على مفتاح OpenRouter مجاناً" },
-  keyStep1:         { English: "Go to openrouter.ai and sign up (free, no credit card)", Hebrew: "עבור אל openrouter.ai והירשם (חינם, ללא כרטיס אשראי)", Arabic: "انتقل إلى openrouter.ai وسجّل (مجاني، بدون بطاقة)" },
-  keyStep2:         { English: "Go to Keys → Create Key", Hebrew: "עבור אל Keys ← Create Key", Arabic: "انتقل إلى Keys ← Create Key" },
-  keyStep3:         { English: "Copy the key (starts with sk-or-) and paste it above", Hebrew: "העתק את המפתח (מתחיל ב-sk-or-) והדבק אותו למעלה", Arabic: "انسخ المفتاح (يبدأ بـ sk-or-) والصقه أعلاه" },
-  keyStep4:         { English: "Free models available — no payment needed", Hebrew: "מודלים חינמיים זמינים — אין צורך בתשלום", Arabic: "نماذج مجانية متاحة — لا حاجة للدفع" },
-  keyError:         { English: "Could not validate key", Hebrew: "לא ניתן לאמת את המפתח", Arabic: "تعذّر التحقق من المفتاح" },
-  changeKey:        { English: "Change API key", Hebrew: "שנה מפתח API", Arabic: "تغيير مفتاح API" },
-  freeTurnsLeft:    { English: "{n} free turns remaining", Hebrew: "נשארו {n} תורות חינמיות", Arabic: "تبقّى {n} دورة مجانية" },
+  keyModalTitle:    { English: "Continue Your Adventure", Hebrew: "המשך את ההרפתקה שלך", Arabic: "تابع مغامرتك", Portuguese: "Continue sua Aventura" },
+  keyModalSub:      { English: "You've used your 20 free turns. Add a free OpenRouter key to keep playing — takes 2 minutes.", Hebrew: "השתמשת ב-20 תורות החינמיות. הוסף מפתח OpenRouter חינמי כדי להמשיך — לוקח 2 דקות.", Arabic: "لقد استخدمت 20 دورة مجانية. أضف مفتاح OpenRouter مجاناً لمواصلة اللعب — يستغرق دقيقتين.", Portuguese: "Você usou seus 20 turnos gratuitos. Adicione uma chave OpenRouter gratuita para continuar jogando — leva 2 minutos." },
+  keyPlaceholder:   { English: "Paste your OpenRouter key (starts with sk-or-...)", Hebrew: "הדבק את מפתח ה-OpenRouter (מתחיל ב-sk-or-...)", Arabic: "الصق مفتاح OpenRouter (يبدأ بـ sk-or-...)", Portuguese: "Cole sua chave OpenRouter (começa com sk-or-...)" },
+  keyValidate:      { English: "Validate & Continue", Hebrew: "אמת והמשך", Arabic: "تحقق وتابع", Portuguese: "Validar e Continuar" },
+  keyValidating:    { English: "Validating...", Hebrew: "מאמת...", Arabic: "جارٍ التحقق...", Portuguese: "Validando..." },
+  keyHowTo:         { English: "How to get a free OpenRouter key", Hebrew: "איך מקבלים מפתח OpenRouter חינמי", Arabic: "كيف تحصل على مفتاح OpenRouter مجاناً", Portuguese: "Como obter uma chave OpenRouter gratuita" },
+  keyStep1:         { English: "Go to openrouter.ai and sign up (free, no credit card)", Hebrew: "עבור אל openrouter.ai והירשם (חינם, ללא כרטיס אשראי)", Arabic: "انتقل إلى openrouter.ai وسجّل (مجاني، بدون بطاقة)", Portuguese: "Acesse openrouter.ai e cadastre-se (grátis, sem cartão)" },
+  keyStep2:         { English: "Go to Keys → Create Key", Hebrew: "עבור אל Keys ← Create Key", Arabic: "انتقل إلى Keys ← Create Key", Portuguese: "Vá em Keys → Create Key" },
+  keyStep3:         { English: "Copy the key (starts with sk-or-) and paste it above", Hebrew: "העתק את המפתח (מתחיל ב-sk-or-) והדבק אותו למעלה", Arabic: "انسخ المفتاح (يبدأ بـ sk-or-) والصقه أعلاه", Portuguese: "Copie a chave (começa com sk-or-) e cole acima" },
+  keyStep4:         { English: "Free models available — no payment needed", Hebrew: "מודלים חינמיים זמינים — אין צורך בתשלום", Arabic: "نماذج مجانية متاحة — لا حاجة للدفع", Portuguese: "Modelos gratuitos disponíveis — sem pagamento" },
+  keyError:         { English: "Could not validate key", Hebrew: "לא ניתן לאמת את המפתח", Arabic: "تعذّر التحقق من المفتاح", Portuguese: "Não foi possível validar a chave" },
+  changeKey:        { English: "Change API key", Hebrew: "שנה מפתח API", Arabic: "تغيير مفتاح API", Portuguese: "Alterar chave API" },
+  freeTurnsLeft:    { English: "{n} free turns remaining", Hebrew: "נשארו {n} תורות חינמיות", Arabic: "تبقّى {n} دورة مجانية", Portuguese: "{n} turnos gratuitos restantes" },
   // ── Home screen ──
-  homeTitle:        { English: "Adventure Awaits", Hebrew: "הרפתקה מחכה", Arabic: "المغامرة تنتظر" },
-  startNew:         { English: "Start New Adventure", Hebrew: "התחל הרפתקה חדשה", Arabic: "ابدأ مغامرة جديدة" },
-  loadSaved:        { English: "Load Saved Adventure", Hebrew: "טען הרפתקה שמורה", Arabic: "تحميل مغامرة محفوظة" },
-  loadSavedSub:     { English: "Resume from a .json save file", Hebrew: "המשך מקובץ שמירה .json", Arabic: "استئناف من ملف حفظ .json" },
-  versionError:     { English: "This save file was created with an incompatible version of the app and cannot be loaded.", Hebrew: "קובץ השמירה נוצר עם גרסה לא תואמת של האפליקציה ולא ניתן לטעון אותו.", Arabic: "تم إنشاء ملف الحفظ هذا بإصدار غير متوافق من التطبيق ولا يمكن تحميله." },
-  quitGame:         { English: "Quit Game", Hebrew: "עזוב משחק", Arabic: "إنهاء اللعبة" },
-  addYourKey:       { English: "Add Your Key", Hebrew: "הוסף מפתח", Arabic: "أضف مفتاحك" },
-  unlimitedTurns:   { English: "Unlimited turns", Hebrew: "תורות ללא הגבלה", Arabic: "دورات غير محدودة" },
-  freeTurnsInfo:    { English: "{n} free turns included · no sign-up needed", Hebrew: "{n} תורות חינמיות כלולות · ללא הרשמה", Arabic: "يشمل {n} دورات مجانية · لا حاجة للتسجيل" },
-  keyModalSubHome:  { English: "Add a free OpenRouter key to play without limits — sign up takes 2 minutes, no credit card.", Hebrew: "הוסף מפתח OpenRouter חינמי למשחק ללא הגבלות — ההרשמה לוקחת 2 דקות, ללא כרטיס אשראי.", Arabic: "أضف مفتاح OpenRouter المجاني للعب بدون قيود — التسجيل يستغرق دقيقتين، بدون بطاقة ائتمان." },
-  turnsLeft:        { English: "{n} free turns left", Hebrew: "נשארו {n} תורות חינמיות", Arabic: "تبقّى {n} دورات مجانية" },
-  suggestedNames:   { English: "Suggested names", Hebrew: "שמות מוצעים", Arabic: "أسماء مقترحة" },
-  optional_:        { English: "optional", Hebrew: "אופציונלי", Arabic: "اختياري" },
+  brandName:        { English: "OpenStory AI", Hebrew: "OpenStory AI", Arabic: "OpenStory AI", Portuguese: "OpenStory AI" },
+  homeTitle:        { English: "Become the author of your own story", Hebrew: "הפוך למחבר הסיפור שלך", Arabic: "كن مؤلف قصتك الخاصة", Portuguese: "Torne-se o autor da sua própria história" },
+  homeTagline:      { English: "Craft interactive adventures in any world — fantasy, sci-fi, mystery, or the real world. Every choice you make shapes the tale.", Hebrew: "צור הרפתקאות אינטראקטיביות בכל עולם — פנטזיה, מדע בדיוני, מסתורין או עולם אמיתי. כל בחירה שלך מעצבת את הסיפור.", Arabic: "صمّم مغامرات تفاعلية في أي عالم — الفانتازيا والخيال العلمي والغموض أو العالم الواقعي. كل اختيار تصنعه يشكّل الحكاية.", Portuguese: "Crie aventuras interativas em qualquer mundo — fantasia, ficção científica, mistério ou o mundo real. Cada escolha molda a história." },
+  homeBullet1:      { English: "Pick your genre, set the rules, design your hero.", Hebrew: "בחר ז'אנר, קבע חוקים, עצב את הגיבור שלך.", Arabic: "اختر النوع، اضبط القواعد، صمّم بطلك.", Portuguese: "Escolha o gênero, defina as regras, crie seu herói." },
+  homeBullet2:      { English: "AI narrates a living world that reacts to you.", Hebrew: "בינה מלאכותית מספרת עולם חי שמגיב אליך.", Arabic: "الذكاء الاصطناعي يسرد عالماً حياً يتفاعل معك.", Portuguese: "A IA narra um mundo vivo que reage às suas ações." },
+  homeBullet3:      { English: "Dice rolls, chapters, and real consequences.", Hebrew: "הטלת קוביות, פרקים והשלכות אמיתיות.", Arabic: "رمي النرد، فصول، وعواقب حقيقية.", Portuguese: "Rolagens de dados, capítulos e consequências reais." },
+  startNew:         { English: "Start New Adventure", Hebrew: "התחל הרפתקה חדשה", Arabic: "ابدأ مغامرة جديدة", Portuguese: "Iniciar Nova Aventura" },
+  loadSaved:        { English: "Load Saved Adventure", Hebrew: "טען הרפתקה שמורה", Arabic: "تحميل مغامرة محفوظة", Portuguese: "Carregar Aventura Salva" },
+  loadSavedSub:     { English: "Resume from a .json save file", Hebrew: "המשך מקובץ שמירה .json", Arabic: "استئناف من ملف حفظ .json", Portuguese: "Retomar de um arquivo .json" },
+  versionError:     { English: "This save file was created with an incompatible version of the app and cannot be loaded.", Hebrew: "קובץ השמירה נוצר עם גרסה לא תואמת של האפליקציה ולא ניתן לטעון אותו.", Arabic: "تم إنشاء ملف الحفظ هذا بإصدار غير متوافق من التطبيق ولا يمكن تحميله.", Portuguese: "Este arquivo de salvamento foi criado com uma versão incompatível do app e não pode ser carregado." },
+  quitGame:         { English: "Quit Game", Hebrew: "עזוב משחק", Arabic: "إنهاء اللعبة", Portuguese: "Sair do Jogo" },
+  addYourKey:       { English: "Add Your Key", Hebrew: "הוסף מפתח", Arabic: "أضف مفتاحك", Portuguese: "Adicionar Chave" },
+  unlimitedTurns:   { English: "Unlimited turns", Hebrew: "תורות ללא הגבלה", Arabic: "دورات غير محدودة", Portuguese: "Turnos ilimitados" },
+  freeTurnsInfo:    { English: "{n} free turns included · no sign-up needed", Hebrew: "{n} תורות חינמיות כלולות · ללא הרשמה", Arabic: "يشمل {n} دورات مجانية · لا حاجة للتسجيل", Portuguese: "{n} turnos gratuitos inclusos · sem cadastro" },
+  keyModalSubHome:  { English: "Add a free OpenRouter key to play without limits — sign up takes 2 minutes, no credit card.", Hebrew: "הוסף מפתח OpenRouter חינמי למשחק ללא הגבלות — ההרשמה לוקחת 2 דקות, ללא כרטיס אשראי.", Arabic: "أضف مفتاح OpenRouter المجاني للعب بدون قيود — التسجيل يستغرق دقيقتين، بدون بطاقة ائتمان.", Portuguese: "Adicione uma chave OpenRouter gratuita para jogar sem limites — cadastro em 2 minutos, sem cartão." },
+  turnsLeft:        { English: "{n} free turns left", Hebrew: "נשארו {n} תורות חינמיות", Arabic: "تبقّى {n} دورات مجانية", Portuguese: "{n} turnos gratuitos restantes" },
+  suggestedNames:   { English: "Suggested names", Hebrew: "שמות מוצעים", Arabic: "أسماء مقترحة", Portuguese: "Nomes sugeridos" },
+  optional_:        { English: "optional", Hebrew: "אופציונלי", Arabic: "اختياري", Portuguese: "opcional" },
+  // ── Help ──
+  help:             { English: "Help", Hebrew: "עזרה", Arabic: "مساعدة", Portuguese: "Ajuda" },
+  helpTitle:        { English: "How OpenStory AI works", Hebrew: "איך OpenStory AI עובד", Arabic: "كيف يعمل OpenStory AI", Portuguese: "Como o OpenStory AI funciona" },
+  helpClose:        { English: "Close", Hebrew: "סגור", Arabic: "إغلاق", Portuguese: "Fechar" },
+  helpWhatIs:       { English: "What is OpenStory AI?", Hebrew: "מה זה OpenStory AI?", Arabic: "ما هو OpenStory AI؟", Portuguese: "O que é o OpenStory AI?" },
+  helpWhatIsBody:   { English: "An AI-powered interactive fiction engine. You set the world, the rules, and your character — then an AI narrator tells the story one turn at a time, reacting to every choice you make.", Hebrew: "מנוע סיפור אינטראקטיבי מבוסס בינה מלאכותית. אתה קובע את העולם, את החוקים ואת הדמות שלך — ואז מספר ה-AI מספר את הסיפור תור אחר תור, מגיב לכל בחירה שלך.", Arabic: "محرك قصص تفاعلية مدعوم بالذكاء الاصطناعي. أنت تحدد العالم والقواعد وشخصيتك — ثم يروي الراوي الذكي القصة دوراً بعد دور، ويتفاعل مع كل اختيار تصنعه.", Portuguese: "Um motor de ficção interativa com IA. Você define o mundo, as regras e o personagem — então um narrador de IA conta a história turno a turno, reagindo a cada escolha sua." },
+  helpHowTo:        { English: "How to play", Hebrew: "איך לשחק", Arabic: "كيف تلعب", Portuguese: "Como jogar" },
+  helpHowTo1:       { English: "Click Start New Adventure and walk through the setup — choose a language, genre, age rating, pacing, length, and rules.", Hebrew: "לחץ על 'התחל הרפתקה חדשה' ועבור על ההגדרות — בחר שפה, ז'אנר, דירוג גיל, קצב, אורך וחוקים.", Arabic: "انقر على 'ابدأ مغامرة جديدة' واتبع خطوات الإعداد — اختر اللغة والنوع والتصنيف العمري والإيقاع والطول والقواعد.", Portuguese: "Clique em Iniciar Nova Aventura e siga a configuração — escolha idioma, gênero, classificação, ritmo, duração e regras." },
+  helpHowTo2:       { English: "Design your character: name, age, appearance, and up to 3 skills. Any field can be left blank — we'll fill it in.", Hebrew: "עצב את הדמות שלך: שם, גיל, מראה ועד 3 כישורים. ניתן להשאיר כל שדה ריק — אנחנו נמלא.", Arabic: "صمّم شخصيتك: الاسم والعمر والمظهر وحتى 3 مهارات. يمكن ترك أي حقل فارغاً — سنملؤه.", Portuguese: "Crie seu personagem: nome, idade, aparência e até 3 habilidades. Qualquer campo pode ficar em branco — nós preenchemos." },
+  helpHowTo3:       { English: "When the story begins, type your own action or pick from the suggestions. The AI responds in kind.", Hebrew: "כשהסיפור מתחיל, הקלד פעולה משלך או בחר מההצעות. ה-AI מגיב בהתאם.", Arabic: "عندما تبدأ القصة، اكتب فعلك الخاص أو اختر من الاقتراحات. يستجيب الذكاء الاصطناعي وفقاً لذلك.", Portuguese: "Quando a história começar, digite sua própria ação ou escolha entre as sugestões. A IA responde em conformidade." },
+  helpDice:         { English: "Dice & fate checks", Hebrew: "קוביות ובדיקות גורל", Arabic: "النرد وفحوص القدر", Portuguese: "Dados e verificações do destino" },
+  helpDiceBody:     { English: "Risky actions trigger a dice roll. A 1 is a critical failure; a 6 is a critical success. If the action matches one of your skills, you roll twice and keep the better result.", Hebrew: "פעולות מסוכנות מפעילות הטלת קובייה. 1 הוא כישלון חרוץ; 6 הוא הצלחה מוחלטת. אם הפעולה תואמת אחד מהכישורים שלך, אתה מטיל פעמיים ושומר על התוצאה הטובה יותר.", Arabic: "الأفعال الخطرة تستدعي رمي النرد. 1 هو فشل ذريع؛ 6 هو نجاح استثنائي. إذا تطابق الفعل مع إحدى مهاراتك، ترمي مرتين وتحتفظ بالنتيجة الأفضل.", Portuguese: "Ações arriscadas acionam uma rolagem de dado. 1 é falha crítica; 6 é sucesso crítico. Se a ação corresponder a uma de suas habilidades, você rola duas vezes e mantém o melhor resultado." },
+  helpChapters:     { English: "Chapters", Hebrew: "פרקים", Arabic: "الفصول", Portuguese: "Capítulos" },
+  helpChaptersBody: { English: "Longer adventures split into chapters, each with one overarching goal. Explore freely — a chapter ends only when you conclusively achieve its goal.", Hebrew: "הרפתקאות ארוכות מתחלקות לפרקים, לכל אחד מטרה מרכזית אחת. חקור בחופשיות — פרק מסתיים רק כשאתה משיג את מטרתו באופן חד-משמעי.", Arabic: "المغامرات الأطول تنقسم إلى فصول، لكل فصل هدف رئيسي واحد. استكشف بحرية — ينتهي الفصل فقط عندما تحقق هدفه بشكل قاطع.", Portuguese: "Aventuras mais longas se dividem em capítulos, cada um com um objetivo central. Explore livremente — um capítulo só termina quando você alcança seu objetivo de forma conclusiva." },
+  helpSaveLoad:     { English: "Save & Load", Hebrew: "שמירה וטעינה", Arabic: "الحفظ والتحميل", Portuguese: "Salvar e Carregar" },
+  helpSaveLoadBody: { English: "Saves are .json files downloaded to your device. Nothing is stored on our servers. Load one from the home screen to continue exactly where you left off.", Hebrew: "השמירות הן קבצי .json שמורדים למכשיר שלך. שום דבר לא נשמר בשרתים שלנו. טען אחד מהמסך הראשי כדי להמשיך בדיוק מהמקום בו עצרת.", Arabic: "ملفات الحفظ هي ملفات .json يتم تنزيلها إلى جهازك. لا يتم تخزين أي شيء على خوادمنا. حمّل ملفاً من الشاشة الرئيسية لتستأنف من حيث توقفت تماماً.", Portuguese: "Os salvamentos são arquivos .json baixados para seu dispositivo. Nada é armazenado em nossos servidores. Carregue um da tela inicial para continuar exatamente de onde parou." },
+  helpFreemium:     { English: "Free turns & your own key", Hebrew: "תורות חינמיות והמפתח שלך", Arabic: "الأدوار المجانية ومفتاحك الخاص", Portuguese: "Turnos gratuitos e sua chave" },
+  helpFreemiumBody: { English: "The first 20 turns are free — no sign-up, no key. After that, add a free OpenRouter API key (takes 2 minutes, no credit card) to play without limits.", Hebrew: "20 התורות הראשונים בחינם — ללא הרשמה וללא מפתח. אחר כך, הוסף מפתח API חינמי של OpenRouter (2 דקות, ללא כרטיס אשראי) כדי לשחק ללא הגבלה.", Arabic: "الأدوار الـ20 الأولى مجانية — بدون تسجيل، بدون مفتاح. بعد ذلك، أضف مفتاح OpenRouter API مجاني (دقيقتان، بدون بطاقة ائتمان) للعب بدون قيود.", Portuguese: "Os primeiros 20 turnos são gratuitos — sem cadastro, sem chave. Depois, adicione uma chave API OpenRouter gratuita (2 minutos, sem cartão) para jogar sem limites." },
+  // ── Settings ──
+  settings:         { English: "Settings", Hebrew: "הגדרות", Arabic: "إعدادات", Portuguese: "Configurações" },
+  settingsSub:      { English: "Customize your reading experience", Hebrew: "התאם את חוויית הקריאה שלך", Arabic: "خصّص تجربة القراءة", Portuguese: "Personalize sua experiência de leitura" },
+  theme_:           { English: "Theme", Hebrew: "ערכת נושא", Arabic: "السمة", Portuguese: "Tema" },
+  themeDark:        { English: "Dark", Hebrew: "כהה", Arabic: "داكن", Portuguese: "Escuro" },
+  themeLight:       { English: "Light", Hebrew: "בהיר", Arabic: "فاتح", Portuguese: "Claro" },
+  fontFamily_:      { English: "Font", Hebrew: "גופן", Arabic: "الخط", Portuguese: "Fonte" },
+  fontSans:         { English: "Sans", Hebrew: "סאנס", Arabic: "سانس", Portuguese: "Sans" },
+  fontSerif:        { English: "Serif", Hebrew: "סריף", Arabic: "سيريف", Portuguese: "Serif" },
+  fontMono:         { English: "Mono", Hebrew: "מונו", Arabic: "مونو", Portuguese: "Mono" },
+  fontDyslexic:     { English: "Dyslexic", Hebrew: "דיסלקסיה", Arabic: "دسلكسي", Portuguese: "Dislexia" },
+  fontSize_:        { English: "Text size", Hebrew: "גודל טקסט", Arabic: "حجم النص", Portuguese: "Tamanho do texto" },
+  sizeS:            { English: "S", Hebrew: "S", Arabic: "S", Portuguese: "S" },
+  sizeM:            { English: "M", Hebrew: "M", Arabic: "M", Portuguese: "M" },
+  sizeL:            { English: "L", Hebrew: "L", Arabic: "L", Portuguese: "L" },
+  sizeXL:           { English: "XL", Hebrew: "XL", Arabic: "XL", Portuguese: "XL" },
+  music_:           { English: "Music", Hebrew: "מוזיקה", Arabic: "موسيقى", Portuguese: "Música" },
   // ── Adventure length options ──
   sprint:           { English: "Sprint",   Hebrew: "ספרינט",  Arabic: "سريع" },
   sprintDesc:       { English: "~5 turns — 1 chapter",   Hebrew: "~5 תורות — פרק אחד",   Arabic: "~5 جولات — فصل واحد" },
@@ -176,12 +216,73 @@ const GENRE_SKILLS = {
 };
 
 const LANGUAGES = [
-  { code: "English", label: "English" },
-  { code: "Hebrew",  label: "עברית" },
-  { code: "Arabic",  label: "العربية" },
+  { code: "English",    label: "English",   flag: "gb" },
+  { code: "Hebrew",     label: "עברית",     flag: "il" },
+  { code: "Arabic",     label: "العربية",   flag: "sa" },
+  { code: "Portuguese", label: "Português", flag: "br" },
 ];
+const flagSrc = (cc) => `https://flagcdn.com/w40/${cc}.png`;
+const flagSrc2x = (cc) => `https://flagcdn.com/w80/${cc}.png`;
 
-const FONTS_URL = "https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Orbitron:wght@400;700;900&family=Fira+Code:wght@400;500&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap";
+const FONTS_URL = "https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Orbitron:wght@400;700;900&family=Fira+Code:wght@400;500&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Lexend:wght@400;500;700&display=swap";
+
+// ─── BRAND THEME (home, setup, modals) ─────────────────────────
+// Two palettes: dark (default) and light. Genre THEMES override in-game.
+const BRAND = {
+  dark: {
+    bg:        "#0B0D12",
+    bgSoft:    "#111420",
+    bgCard:    "rgba(22, 26, 38, 0.85)",
+    bgStory:   "rgba(255, 255, 255, 0.03)",
+    primary:   "#E5C07B",   // warm gold — genre-neutral but editorial
+    secondary: "#7FB3A6",
+    accent:    "#E06C75",
+    text:      "#E8E6E1",
+    textMuted: "#8B94A7",
+    border:    "#2A2F3D",
+    bgImage:   "radial-gradient(ellipse at 20% 10%, rgba(229,192,123,0.06) 0%, transparent 50%), radial-gradient(ellipse at 80% 90%, rgba(127,179,166,0.05) 0%, transparent 50%)",
+  },
+  light: {
+    bg:        "#F7F6F3",
+    bgSoft:    "#EFEDE8",
+    bgCard:    "rgba(255, 255, 255, 0.85)",
+    bgStory:   "rgba(0, 0, 0, 0.03)",
+    primary:   "#9A7B2E",
+    secondary: "#3E7A6A",
+    accent:    "#C0392B",
+    text:      "#1F2937",
+    textMuted: "#6B7280",
+    border:    "#D8D4CC",
+    bgImage:   "radial-gradient(ellipse at 20% 10%, rgba(154,123,46,0.06) 0%, transparent 50%), radial-gradient(ellipse at 80% 90%, rgba(62,122,106,0.05) 0%, transparent 50%)",
+  },
+};
+
+// User-customizable font families (applied via CSS vars)
+const FONT_STACKS = {
+  sans:     { heading: "'Instrument Serif', 'Source Serif 4', serif", body: "'Inter', system-ui, sans-serif" },
+  serif:    { heading: "'Instrument Serif', 'Source Serif 4', serif", body: "'Source Serif 4', 'Merriweather', Georgia, serif" },
+  mono:     { heading: "'Fira Code', monospace",                       body: "'Fira Code', ui-monospace, monospace" },
+  dyslexic: { heading: "'Lexend', system-ui, sans-serif",              body: "'Lexend', system-ui, sans-serif" },
+};
+
+const FONT_SIZES = { s: 14, m: 16, l: 18, xl: 20 };
+const MOBILE_BREAKPOINT = 720;
+
+function loadPrefs() {
+  try {
+    const raw = localStorage.getItem("openstory_prefs");
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    return {
+      themeMode: p.themeMode === "light" ? "light" : "dark",
+      font:      ["sans","serif","mono","dyslexic"].includes(p.font) ? p.font : "sans",
+      size:      ["s","m","l","xl"].includes(p.size) ? p.size : "m",
+    };
+  } catch { return null; }
+}
+function savePrefs(p) {
+  try { localStorage.setItem("openstory_prefs", JSON.stringify(p)); } catch {}
+}
 const SETUP_STEPS   = ["language", "genre", "age", "length", "duration", "rules", "perspective", "prompt", "character"];
 const SUMMARY_EVERY = 5;
 const WINDOW_SIZE   = 12;
@@ -602,6 +703,160 @@ function SidebarActions({ theme, t, turnCount, isRTL, onSave, onExport, onQuit, 
   );
 }
 
+// ─── HELP MODAL ────────────────────────────────────────────────
+function HelpModal({ theme, t, isRTL, onClose }) {
+  const sections = [
+    { titleKey: "helpWhatIs",   bodyKey: "helpWhatIsBody",   icon: "✦" },
+    { titleKey: "helpHowTo",    body: null,                  icon: "🎬", steps: ["helpHowTo1", "helpHowTo2", "helpHowTo3"] },
+    { titleKey: "helpDice",     bodyKey: "helpDiceBody",     icon: "🎲" },
+    { titleKey: "helpChapters", bodyKey: "helpChaptersBody", icon: "📖" },
+    { titleKey: "helpSaveLoad", bodyKey: "helpSaveLoadBody", icon: "💾" },
+    { titleKey: "helpFreemium", bodyKey: "helpFreemiumBody", icon: "🗝️" },
+  ];
+  return (
+    <div onClick={onClose} style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.78)", backdropFilter: "blur(8px)",
+      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 950,
+      padding: 16, direction: isRTL ? "rtl" : "ltr",
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: theme.bg, border: `1px solid ${theme.border}`,
+        borderRadius: 16, padding: "28px 32px", maxWidth: 680, width: "100%",
+        maxHeight: "88vh", overflowY: "auto", boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+        textAlign: isRTL ? "right" : "left",
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+          <h2 style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 28, margin: 0, letterSpacing: 0.5 }}>
+            {t("helpTitle")}
+          </h2>
+          <button onClick={onClose} aria-label={t("helpClose")} style={{
+            background: "transparent", border: "none", color: theme.textMuted,
+            fontSize: 24, cursor: "pointer", padding: "4px 10px", lineHeight: 1,
+          }}>✕</button>
+        </div>
+        <p style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 14, margin: "0 0 20px" }}>
+          {t("brandName")} · {t("homeTagline")}
+        </p>
+        {sections.map(s => (
+          <section key={s.titleKey} style={{ marginBottom: 18, paddingBottom: 16, borderBottom: `1px solid ${theme.border}44` }}>
+            <h3 style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 18, margin: "0 0 8px", display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 18 }}>{s.icon}</span>{t(s.titleKey)}
+            </h3>
+            {s.bodyKey && (
+              <p style={{ fontFamily: theme.body, color: theme.text, fontSize: 14, lineHeight: 1.7, margin: 0 }}>
+                {t(s.bodyKey)}
+              </p>
+            )}
+            {s.steps && (
+              <ol style={{ fontFamily: theme.body, color: theme.text, fontSize: 14, lineHeight: 1.7, margin: "4px 0 0", paddingInlineStart: 22 }}>
+                {s.steps.map(k => <li key={k} style={{ marginBottom: 4 }}>{t(k)}</li>)}
+              </ol>
+            )}
+          </section>
+        ))}
+        <button onClick={onClose} style={{
+          marginTop: 8, background: theme.primary, border: "none", borderRadius: 10,
+          padding: "12px 28px", color: theme.bg, fontFamily: theme.heading, fontSize: 14, fontWeight: 700,
+          cursor: "pointer", letterSpacing: 0.5,
+        }}>{t("helpClose")}</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── SETTINGS MODAL ────────────────────────────────────────────
+function SettingsModal({ theme, t, isRTL, prefs, setPrefs, musicEnabled, setMusicEnabled, musicVolume, setMusicVolume, onClose }) {
+  const Row = ({ label, children }) => (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{ fontFamily: theme.heading, color: theme.textMuted, fontSize: 11, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>{label}</div>
+      {children}
+    </div>
+  );
+  const Pill = ({ active, onClick, children }) => (
+    <button onClick={onClick} style={{
+      background: active ? theme.primary : "transparent",
+      border: `1.5px solid ${active ? theme.primary : theme.border}`,
+      color: active ? theme.bg : theme.text,
+      borderRadius: 8, padding: "8px 14px", fontFamily: theme.body, fontSize: 13,
+      cursor: "pointer", transition: "all 0.2s",
+    }}>{children}</button>
+  );
+  return (
+    <div onClick={onClose} style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.78)", backdropFilter: "blur(8px)",
+      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 950,
+      padding: 16, direction: isRTL ? "rtl" : "ltr",
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: theme.bg, border: `1px solid ${theme.border}`,
+        borderRadius: 16, padding: "28px 30px", maxWidth: 440, width: "100%",
+        boxShadow: "0 24px 80px rgba(0,0,0,0.6)", textAlign: isRTL ? "right" : "left",
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+          <h2 style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 24, margin: 0 }}>{t("settings")}</h2>
+          <button onClick={onClose} aria-label={t("helpClose")} style={{
+            background: "transparent", border: "none", color: theme.textMuted,
+            fontSize: 22, cursor: "pointer", padding: "4px 10px", lineHeight: 1,
+          }}>✕</button>
+        </div>
+        <p style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 13, margin: "0 0 22px" }}>
+          {t("settingsSub")}
+        </p>
+
+        <Row label={t("theme_")}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Pill active={prefs.themeMode === "dark"}  onClick={() => setPrefs(p => ({ ...p, themeMode: "dark" }))}>🌙 {t("themeDark")}</Pill>
+            <Pill active={prefs.themeMode === "light"} onClick={() => setPrefs(p => ({ ...p, themeMode: "light" }))}>☀️ {t("themeLight")}</Pill>
+          </div>
+        </Row>
+
+        <Row label={t("fontFamily_")}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {[
+              { v: "auto",     label: "Auto" },
+              { v: "sans",     label: t("fontSans") },
+              { v: "serif",    label: t("fontSerif") },
+              { v: "mono",     label: t("fontMono") },
+              { v: "dyslexic", label: t("fontDyslexic") },
+            ].map(o => (
+              <Pill key={o.v} active={prefs.font === o.v} onClick={() => setPrefs(p => ({ ...p, font: o.v }))}>
+                {o.label}
+              </Pill>
+            ))}
+          </div>
+        </Row>
+
+        <Row label={t("fontSize_")}>
+          <div style={{ display: "flex", gap: 8 }}>
+            {[["s","sizeS"],["m","sizeM"],["l","sizeL"],["xl","sizeXL"]].map(([v, k]) => (
+              <Pill key={v} active={prefs.size === v} onClick={() => setPrefs(p => ({ ...p, size: v }))}>
+                <span style={{ fontSize: v === "s" ? 11 : v === "m" ? 13 : v === "l" ? 15 : 17 }}>{t(k)}</span>
+              </Pill>
+            ))}
+          </div>
+        </Row>
+
+        <Row label={t("music_")}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <button onClick={() => setMusicEnabled(v => !v)} style={{
+              background: "transparent", border: `1.5px solid ${theme.border}`, borderRadius: 8,
+              padding: "8px 14px", cursor: "pointer", fontSize: 16, color: theme.text,
+            }}>{musicEnabled ? "🎵" : "🔇"}</button>
+            <input type="range" min={0} max={1} step={0.05}
+              value={musicVolume}
+              onChange={e => setMusicVolume(parseFloat(e.target.value))}
+              style={{ flex: 1, accentColor: theme.primary, cursor: "pointer", opacity: musicEnabled ? 1 : 0.4 }}
+            />
+            <span style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 12, minWidth: 30, textAlign: "right" }}>
+              {Math.round(musicVolume * 100)}%
+            </span>
+          </div>
+        </Row>
+      </div>
+    </div>
+  );
+}
+
 function inputStyle(theme) {
   return {
     width: "100%", background: `${theme.bg}88`, border: `1px solid ${theme.border}`,
@@ -714,13 +969,24 @@ export default function AdventureGame() {
   const [keyInput, setKeyInput]           = useState("");
   const [keyError, setKeyError]           = useState("");
   const [keyValidating, setKeyValidating] = useState(false);
-  const [showHomeKeyHelp, setShowHomeKeyHelp] = useState(false);
 
   // Music state
   const [currentMood, setCurrentMood]     = useState("neutral");
   const [musicVolume, setMusicVolume]     = useState(0.4);
   const [musicEnabled, setMusicEnabled]   = useState(false);
   const hasInteracted = useRef(false);
+
+  // User preferences (theme, font, size) — persisted to localStorage
+  const [prefs, setPrefs] = useState(() => loadPrefs() || { themeMode: "dark", font: "auto", size: "m" });
+  useEffect(() => { savePrefs(prefs); }, [prefs]);
+  const [showHelp, setShowHelp]         = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [isMobile, setIsMobile]         = useState(() => typeof window !== "undefined" && window.innerWidth < MOBILE_BREAKPOINT);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   useMusic(currentMood, musicVolume, musicEnabled && phase === "game");
 
@@ -737,7 +1003,38 @@ export default function AdventureGame() {
     return str;
   }, [lang]);
 
-  const theme        = THEMES[config.genre] || THEMES.fantasy;
+  // Resolve theme: BRAND palette on home/setup-before-genre, genre theme during gameplay.
+  // User prefs layer on top: light mode swaps bg/text, font pref overrides body font.
+  const onBrandScreen = phase === "home" || (phase === "setup" && !config.genre);
+  const brandPalette  = BRAND[prefs.themeMode === "light" ? "light" : "dark"];
+  const genreTheme    = THEMES[config.genre] || THEMES.fantasy;
+  const bodyFontOverride = prefs.font === "auto" ? null : FONT_STACKS[prefs.font].body;
+  const theme = onBrandScreen
+    ? {
+        ...brandPalette,
+        heading: "'Instrument Serif', 'Source Serif 4', serif",
+        body:    bodyFontOverride || "'Inter', system-ui, sans-serif",
+        icon:    "✦",
+        particle:"✦",
+        icons:   null,
+      }
+    : prefs.themeMode === "light"
+      ? {
+          ...genreTheme,
+          bg:        BRAND.light.bg,
+          bgCard:    BRAND.light.bgCard,
+          bgStory:   BRAND.light.bgStory,
+          text:      BRAND.light.text,
+          textMuted: BRAND.light.textMuted,
+          border:    BRAND.light.border,
+          bgImage:   BRAND.light.bgImage,
+          body:      bodyFontOverride || genreTheme.body,
+        }
+      : {
+          ...genreTheme,
+          body: bodyFontOverride || genreTheme.body,
+        };
+  const storyFontSizePx = FONT_SIZES[prefs.size] || FONT_SIZES.m;
   const currentStep  = SETUP_STEPS[setupStep];
   const totalChapters = CHAPTER_MAP[config.storyLength] || Math.max(1, Math.round((config.storyLength || 10) / 5));
 
@@ -757,9 +1054,10 @@ export default function AdventureGame() {
   const buildSystemPrompt = useCallback((cfgOverride, charOverride) => {
     const cfg  = cfgOverride  ?? config;
     const char = charOverride ?? character;
-    const eLang    = cfg.language || "English";
-    const eHebrew  = eLang === "Hebrew";
-    const eRTL     = RTL_LANGS.includes(eLang);
+    const eLang       = cfg.language || "English";
+    const eHebrew     = eLang === "Hebrew";
+    const eRTL        = RTL_LANGS.includes(eLang);
+    const ePortuguese = eLang === "Portuguese";
 
     const ageRules = {
       kids:  "Content suitable for children 8+. No violence beyond mild conflict. No romance. Simple vocabulary.",
@@ -811,12 +1109,16 @@ PERSPECTIVE: ${cfg.perspective === "first"
     ? 'כתוב בגוף ראשון. השתמש ב"אני", "שלי". דוגמה: "שללתי את חרבי וצעדתי אל החשיכה."'
     : eRTL
       ? 'اكتب بضمير المتكلم. استخدم "أنا"، "لي". مثال: "سللت سيفي وخطوت إلى الظلام."'
-      : 'Write in FIRST PERSON. Use "I", "my", "me". Example: "I drew my sword and stepped into the dark."'
+      : ePortuguese
+        ? 'Escreva em PRIMEIRA PESSOA. Use "eu", "meu/minha". Exemplo: "Desembainhei minha espada e avancei para a escuridão."'
+        : 'Write in FIRST PERSON. Use "I", "my", "me". Example: "I drew my sword and stepped into the dark."'
   : eHebrew
     ? 'כתוב בגוף שני. השתמש ב"אתה", "שלך". דוגמה: "אתה שולף את חרבך וצועד אל החשיכה."'
     : eRTL
       ? 'اكتب بضمير المخاطب. استخدم "أنت"، "لك". مثال: "تسلّ سيفك وتخطو نحو الظلام."'
-      : 'Write in SECOND PERSON. Use "you", "your". Example: "You draw your sword and step into the dark."'}
+      : ePortuguese
+        ? 'Escreva em SEGUNDA PESSOA. Use "você", "seu/sua". Exemplo: "Você desembainha sua espada e avança para a escuridão."'
+        : 'Write in SECOND PERSON. Use "you", "your". Example: "You draw your sword and step into the dark."'}
 
 CHARACTER: Name: ${char.name || "The Adventurer"}, Gender: ${char.gender || "unspecified"}, Age: ${char.age || "unknown"}, Appearance: ${(char.appearance || "unspecified").replace(/\n+/g, ", ")}, Skills: ${skillsEN.join(", ") || "none"}
 
@@ -856,8 +1158,8 @@ Provide 2-5 meaningfully different choices. ALWAYS include at least 1 choice unl
         return null; // caller must handle null
       }
       console.error("API error:", err);
-      const errorMsg = lang === "Hebrew" ? "משהו השתבש... נסה שוב." : lang === "Arabic" ? "حدث خطأ... حاول مرة أخرى." : "Something went wrong... try again.";
-      const retryMsg = lang === "Hebrew" ? "נסה שוב" : lang === "Arabic" ? "حاول مرة أخرى" : "Try again";
+      const errorMsg = lang === "Hebrew" ? "משהו השתבש... נסה שוב." : lang === "Arabic" ? "حدث خطأ... حاول مرة أخرى." : lang === "Portuguese" ? "Algo deu errado... tente novamente." : "Something went wrong... try again.";
+      const retryMsg = lang === "Hebrew" ? "נסה שוב" : lang === "Arabic" ? "حاول مرة أخرى" : lang === "Portuguese" ? "Tentar novamente" : "Try again";
       return {
         story: errorMsg,
         choices: [retryMsg],
@@ -1245,7 +1547,17 @@ Provide 2-5 meaningfully different choices. ALWAYS include at least 1 choice unl
               {LANGUAGES.map(l => (
                 <OptionButton key={l.code} theme={theme} selected={config.language === l.code}
                   onClick={() => setConfig(c => ({ ...c, language: l.code }))}
-                  style={{ textAlign: "center", fontSize: 16 }}>{l.label}</OptionButton>
+                  style={{ textAlign: "center", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
+                  <img
+                    src={flagSrc(l.flag)}
+                    srcSet={`${flagSrc(l.flag)} 1x, ${flagSrc2x(l.flag)} 2x`}
+                    alt=""
+                    width={28}
+                    height={20}
+                    style={{ borderRadius: 3, boxShadow: "0 0 0 1px rgba(0,0,0,0.25)", display: "block", objectFit: "cover" }}
+                  />
+                  <span>{l.label}</span>
+                </OptionButton>
               ))}
             </div>
             <NavButtons {...nav} onBack={() => setPhase("home")} onNext={() => setSetupStep(1)} canNext />
@@ -1486,8 +1798,13 @@ Provide 2-5 meaningfully different choices. ALWAYS include at least 1 choice unl
 
   // ─── GAME VIEW ────────────────────────────────────────────────
   const renderGame = () => (
-    <div style={{ display: "flex", gap: 20, maxWidth: 900, width: "100%", margin: "0 auto", minHeight: "80vh", direction: isRTL ? "rtl" : "ltr" }}>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+    <div style={{
+      display: "flex", gap: isMobile ? 12 : 20,
+      flexDirection: isMobile ? "column" : "row",
+      maxWidth: 900, width: "100%", margin: "0 auto",
+      minHeight: "80vh", direction: isRTL ? "rtl" : "ltr",
+    }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
         {/* Story panel */}
         <div style={{
           background: theme.bgCard, backdropFilter: "blur(20px)", border: `1px solid ${theme.border}`,
@@ -1589,7 +1906,8 @@ Provide 2-5 meaningfully different choices. ALWAYS include at least 1 choice unl
                 )}
                 <p style={{
                   fontFamily: theme.body, color: entry.role === "player" ? theme.primary : theme.text,
-                  fontSize: entry.role === "player" ? 14 : 15, lineHeight: 1.7,
+                  fontSize: entry.role === "player" ? Math.max(13, storyFontSizePx - 1) : storyFontSizePx,
+                  lineHeight: 1.75,
                   margin: entry.role === "player" ? "4px 0 0" : 0,
                   fontStyle: entry.role === "player" ? "italic" : "normal", whiteSpace: "pre-wrap",
                 }}>{entry.text}</p>
@@ -1679,9 +1997,9 @@ Provide 2-5 meaningfully different choices. ALWAYS include at least 1 choice unl
       {/* Minimal sidebar — shown when no stats and no chapter progress yet */}
       {!config.trackStats && !(chapterBrief && (chapterProgress.achieved.length > 0 || chapterProgress.clues.length > 0)) && (
         <div style={{
-          width: 190, flexShrink: 0, background: theme.bgCard, backdropFilter: "blur(20px)",
+          width: isMobile ? "100%" : 190, flexShrink: 0, background: theme.bgCard, backdropFilter: "blur(20px)",
           border: `1px solid ${theme.border}`, borderRadius: 16, padding: "18px 14px", alignSelf: "flex-start",
-          position: "sticky", top: 20, boxShadow: "0 10px 40px rgba(0,0,0,0.2)", textAlign: isRTL ? "right" : "left",
+          position: isMobile ? "static" : "sticky", top: 20, boxShadow: "0 10px 40px rgba(0,0,0,0.2)", textAlign: isRTL ? "right" : "left",
         }}>
           <SidebarActions theme={theme} t={t} turnCount={turnCount} isRTL={isRTL}
             onSave={handleSaveGame} onExport={handleExport} onQuit={resetGame}
@@ -1695,9 +2013,9 @@ Provide 2-5 meaningfully different choices. ALWAYS include at least 1 choice unl
       {/* Chapter progress sidebar — shown when stats are off but chapters are active */}
       {!config.trackStats && chapterBrief && (chapterProgress.achieved.length > 0 || chapterProgress.clues.length > 0) && (
         <div style={{
-          width: 190, flexShrink: 0, background: theme.bgCard, backdropFilter: "blur(20px)",
+          width: isMobile ? "100%" : 190, flexShrink: 0, background: theme.bgCard, backdropFilter: "blur(20px)",
           border: `1px solid ${theme.border}`, borderRadius: 16, padding: "18px 14px", alignSelf: "flex-start",
-          position: "sticky", top: 20, boxShadow: "0 10px 40px rgba(0,0,0,0.2)", textAlign: isRTL ? "right" : "left",
+          position: isMobile ? "static" : "sticky", top: 20, boxShadow: "0 10px 40px rgba(0,0,0,0.2)", textAlign: isRTL ? "right" : "left",
           display: "flex", flexDirection: "column",
         }}>
           <h3 style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 12, textTransform: "uppercase", letterSpacing: 1.5, margin: "0 0 12px" }}>
@@ -1721,9 +2039,9 @@ Provide 2-5 meaningfully different choices. ALWAYS include at least 1 choice unl
       {/* Stats sidebar */}
       {config.trackStats && (
         <div style={{
-          width: 200, flexShrink: 0, background: theme.bgCard, backdropFilter: "blur(20px)",
+          width: isMobile ? "100%" : 200, flexShrink: 0, background: theme.bgCard, backdropFilter: "blur(20px)",
           border: `1px solid ${theme.border}`, borderRadius: 16, padding: "20px 16px", alignSelf: "flex-start",
-          position: "sticky", top: 20, boxShadow: "0 10px 40px rgba(0,0,0,0.2)", textAlign: isRTL ? "right" : "left",
+          position: isMobile ? "static" : "sticky", top: 20, boxShadow: "0 10px 40px rgba(0,0,0,0.2)", textAlign: isRTL ? "right" : "left",
           display: "flex", flexDirection: "column",
         }}>
           <h3 style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 13, textTransform: "uppercase", letterSpacing: 1.5, margin: "0 0 16px" }}>{t("stats")}</h3>
@@ -1791,16 +2109,27 @@ Provide 2-5 meaningfully different choices. ALWAYS include at least 1 choice unl
         @keyframes diceRoll { 0%,100% { transform:rotate(0deg) scale(1); } 25% { transform:rotate(-15deg) scale(1.05); } 75% { transform:rotate(15deg) scale(0.95); } }
         @keyframes chapterFade { 0% { opacity:0; transform:translateY(-20px) scale(0.95); } 15%,85% { opacity:1; transform:translateY(0) scale(1); } 100% { opacity:0; transform:translateY(-10px) scale(0.98); } }
         * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; overflow-x: hidden; -webkit-text-size-adjust: 100%; }
+        body { background: ${theme.bg}; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: ${theme.border}; border-radius: 3px; }
         ::placeholder { color: ${theme.textMuted}; opacity: 0.6; }
+        /* Inputs — ensure minimum 16px on mobile to prevent iOS zoom on focus */
+        @media (max-width: ${MOBILE_BREAKPOINT}px) {
+          input[type="text"], input[type="number"], textarea { font-size: 16px !important; }
+          button { min-height: 40px; }
+          .os-hero { font-size: clamp(26px, 8vw, 36px) !important; }
+        }
+        /* Selection */
+        ::selection { background: ${theme.primary}40; color: ${theme.text}; }
       `}</style>
 
       <div
         style={{
           minHeight: "100vh", background: theme.bg, backgroundImage: theme.bgImage,
-          padding: "40px 20px", fontFamily: theme.body, color: theme.text, transition: "background 0.6s ease",
+          padding: isMobile ? "24px 14px" : "40px 20px",
+          fontFamily: theme.body, color: theme.text, transition: "background 0.6s ease",
           direction: isRTL ? "rtl" : "ltr",
         }}
         onClick={() => {
@@ -1810,7 +2139,42 @@ Provide 2-5 meaningfully different choices. ALWAYS include at least 1 choice unl
           }
         }}
       >
-        <FloatingParticles theme={theme} />
+        {prefs.themeMode !== "light" && <FloatingParticles theme={theme} />}
+
+        {/* Top-right floating nav: Help + Settings */}
+        <div style={{
+          position: "fixed",
+          top: 14,
+          [isRTL ? "left" : "right"]: 14,
+          display: "flex", gap: 8, zIndex: 400,
+        }}>
+          <button
+            onClick={() => setShowHelp(true)}
+            aria-label={t("help")}
+            title={t("help")}
+            style={{
+              background: theme.bgCard, border: `1px solid ${theme.border}`,
+              borderRadius: 10, width: 38, height: 38, padding: 0,
+              color: theme.text, cursor: "pointer", fontSize: 16,
+              backdropFilter: "blur(10px)", transition: "all 0.15s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = theme.primary; e.currentTarget.style.color = theme.primary; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = theme.border; e.currentTarget.style.color = theme.text; }}
+          >❔</button>
+          <button
+            onClick={() => setShowSettings(true)}
+            aria-label={t("settings")}
+            title={t("settings")}
+            style={{
+              background: theme.bgCard, border: `1px solid ${theme.border}`,
+              borderRadius: 10, width: 38, height: 38, padding: 0,
+              color: theme.text, cursor: "pointer", fontSize: 16,
+              backdropFilter: "blur(10px)", transition: "all 0.15s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = theme.primary; e.currentTarget.style.color = theme.primary; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = theme.border; e.currentTarget.style.color = theme.text; }}
+          >⚙</button>
+        </div>
 
         {/* Chapter banner overlay */}
         {chapterBanner && (
@@ -1832,50 +2196,113 @@ Provide 2-5 meaningfully different choices. ALWAYS include at least 1 choice unl
 
         <div style={{ position: "relative", zIndex: 1 }}>
 
-          {/* ── Home screen ── */}
+          {/* ── Home screen — OpenStory AI ── */}
           {phase === "home" && (
-            <div style={{ maxWidth: 500, margin: "0 auto" }}>
-              <div style={{ textAlign: "center", marginBottom: 36 }}>
-                <h1 style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 36, margin: "0 0 8px", letterSpacing: 2, textShadow: `0 0 40px ${theme.primary}30` }}>
-                  ⚔️ {t("homeTitle")}
+            <div className="os-home" style={{ maxWidth: 640, margin: "0 auto", paddingTop: isMobile ? 48 : 24 }}>
+              {/* Wordmark */}
+              <div style={{ textAlign: "center", marginBottom: 28 }}>
+                <div style={{
+                  fontFamily: theme.heading, color: theme.primary,
+                  fontSize: 14, letterSpacing: 6, textTransform: "uppercase",
+                  opacity: 0.85, marginBottom: 12,
+                }}>
+                  ✦ {t("brandName")} ✦
+                </div>
+                <h1 className="os-hero" style={{
+                  fontFamily: theme.heading, color: theme.text,
+                  fontSize: "clamp(30px, 6vw, 52px)", fontWeight: 400,
+                  lineHeight: 1.12, margin: "0 auto 14px",
+                  maxWidth: 560, letterSpacing: "-0.01em",
+                }}>
+                  {t("homeTitle")}
                 </h1>
-                <GenreIconStrip theme={THEMES.fantasy} />
+                <p style={{
+                  fontFamily: theme.body, color: theme.textMuted,
+                  fontSize: 16, lineHeight: 1.6, margin: "0 auto",
+                  maxWidth: 520,
+                }}>
+                  {t("homeTagline")}
+                </p>
               </div>
+
+              {/* Feature bullets */}
               <div style={{
-                background: theme.bgCard, backdropFilter: "blur(20px)", border: `1px solid ${theme.border}`,
-                borderRadius: 16, padding: "32px 36px", boxShadow: "0 10px 40px rgba(0,0,0,0.3)",
-                display: "flex", flexDirection: "column", gap: 14,
+                display: "grid",
+                gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
+                gap: 12, marginBottom: 28,
+              }}>
+                {[
+                  { icon: "🎭", key: "homeBullet1" },
+                  { icon: "🪄", key: "homeBullet2" },
+                  { icon: "🎲", key: "homeBullet3" },
+                ].map(b => (
+                  <div key={b.key} style={{
+                    background: theme.bgCard, border: `1px solid ${theme.border}`,
+                    borderRadius: 12, padding: "14px 16px",
+                    fontFamily: theme.body, color: theme.text, fontSize: 13, lineHeight: 1.5,
+                    display: "flex", alignItems: "flex-start", gap: 10,
+                  }}>
+                    <span style={{ fontSize: 18, flexShrink: 0 }}>{b.icon}</span>
+                    <span>{t(b.key)}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA card */}
+              <div style={{
+                background: theme.bgCard, backdropFilter: "blur(20px)",
+                border: `1px solid ${theme.border}`, borderRadius: 16,
+                padding: isMobile ? "20px 20px" : "26px 30px",
+                boxShadow: prefs.themeMode === "light" ? "0 4px 24px rgba(0,0,0,0.06)" : "0 10px 40px rgba(0,0,0,0.3)",
+                display: "flex", flexDirection: "column", gap: 12,
               }}>
                 <button
                   onClick={() => setPhase("setup")}
+                  className="os-btn-primary"
                   style={{
-                    padding: "16px 0", borderRadius: 10, border: "none",
+                    padding: "16px 0", borderRadius: 12, border: "none",
                     background: theme.primary, color: theme.bg,
-                    fontFamily: theme.heading, fontSize: 16, fontWeight: 700,
-                    cursor: "pointer", letterSpacing: 1, textTransform: "uppercase", transition: "opacity 0.2s",
+                    fontFamily: theme.body, fontSize: 16, fontWeight: 600,
+                    cursor: "pointer", letterSpacing: 0.3,
+                    transition: "transform 0.15s, box-shadow 0.15s",
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.opacity = "0.85"; }}
-                  onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = `0 8px 24px ${theme.primary}40`; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
                 >
-                  ✦ {t("startNew")}
+                  {t("startNew")} →
                 </button>
-                <button
-                  onClick={handleLoadGame}
-                  style={{
-                    padding: "14px 0", borderRadius: 10, border: `1px solid ${theme.border}`,
-                    background: "transparent", color: theme.text,
-                    fontFamily: theme.heading, fontSize: 15, fontWeight: 700,
-                    cursor: "pointer", letterSpacing: 1, textTransform: "uppercase", transition: "border-color 0.2s",
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = theme.primary; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = theme.border; }}
-                >
-                  💾 {t("loadSaved")}
-                </button>
-                {/* Key / free-turns section */}
-                <div style={{ paddingTop: 12, borderTop: `1px solid ${theme.border}33` }}>
+                <div style={{ display: "flex", gap: 10, flexDirection: isMobile ? "column" : "row" }}>
+                  <button
+                    onClick={handleLoadGame}
+                    style={{
+                      flex: 1, padding: "12px 0", borderRadius: 10,
+                      border: `1px solid ${theme.border}`, background: "transparent",
+                      color: theme.text, fontFamily: theme.body, fontSize: 14, fontWeight: 500,
+                      cursor: "pointer", transition: "all 0.15s",
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = theme.primary; e.currentTarget.style.color = theme.primary; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = theme.border; e.currentTarget.style.color = theme.text; }}
+                  >
+                    💾 {t("loadSaved")}
+                  </button>
+                  <button
+                    onClick={() => setShowHelp(true)}
+                    style={{
+                      flex: 1, padding: "12px 0", borderRadius: 10,
+                      border: `1px solid ${theme.border}`, background: "transparent",
+                      color: theme.text, fontFamily: theme.body, fontSize: 14, fontWeight: 500,
+                      cursor: "pointer", transition: "all 0.15s",
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = theme.primary; e.currentTarget.style.color = theme.primary; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = theme.border; e.currentTarget.style.color = theme.text; }}
+                  >
+                    ❔ {t("help")}
+                  </button>
+                </div>
+                {/* Key / free-turns footer */}
+                <div style={{ paddingTop: 10, marginTop: 4, borderTop: `1px solid ${theme.border}55` }}>
                   {hasUserKey() ? (
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
                       <span style={{ fontFamily: theme.body, color: theme.secondary || theme.primary, fontSize: 12 }}>
                         🗝️ {t("unlimitedTurns")}
                       </span>
@@ -1887,44 +2314,20 @@ Provide 2-5 meaningfully different choices. ALWAYS include at least 1 choice unl
                       </button>
                     </div>
                   ) : (
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                        <span style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 12 }}>
-                          ✦ {t("freeTurnsInfo", { n: String(FREE_TURN_LIMIT) })}
-                        </span>
-                        <button
-                          onClick={() => { setKeyModalContext("home"); setShowKeyModal(true); setKeyInput(""); setKeyError(""); }}
-                          style={{
-                            background: "none", border: `1px solid ${theme.primary}60`, borderRadius: 6,
-                            color: theme.primary, fontFamily: theme.heading, fontSize: 11,
-                            cursor: "pointer", padding: "3px 10px", letterSpacing: 0.5,
-                          }}
-                        >
-                          🗝️ {t("addYourKey")}
-                        </button>
-                      </div>
-                      {/* Help toggle */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+                      <span style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 12 }}>
+                        ✦ {t("freeTurnsInfo", { n: String(FREE_TURN_LIMIT) })}
+                      </span>
                       <button
-                        onClick={() => setShowHomeKeyHelp(s => !s)}
-                        style={{ background: "none", border: "none", color: theme.textMuted, fontFamily: theme.body, fontSize: 11, cursor: "pointer", padding: 0, textDecoration: "underline" }}
+                        onClick={() => { setKeyModalContext("home"); setShowKeyModal(true); setKeyInput(""); setKeyError(""); }}
+                        style={{
+                          background: "none", border: `1px solid ${theme.primary}80`, borderRadius: 6,
+                          color: theme.primary, fontFamily: theme.body, fontSize: 12,
+                          cursor: "pointer", padding: "4px 12px",
+                        }}
                       >
-                        {showHomeKeyHelp ? "▲" : "▼"} {t("keyHowTo")}
+                        🗝️ {t("addYourKey")}
                       </button>
-                      {showHomeKeyHelp && (
-                        <div style={{ marginTop: 10, background: `${theme.border}20`, borderRadius: 8, padding: "10px 12px" }}>
-                          {[
-                            { text: t("keyStep1"), link: "https://openrouter.ai" },
-                            { text: t("keyStep2") },
-                            { text: t("keyStep3") },
-                            { text: t("keyStep4") },
-                          ].map(({ text, link }, i) => (
-                            <div key={i} style={{ fontFamily: theme.body, color: theme.text, fontSize: 11, marginBottom: 5, display: "flex", gap: 8 }}>
-                              <span style={{ color: theme.primary, fontWeight: 700, flexShrink: 0 }}>{i + 1}.</span>
-                              <span>{link ? <><a href={link} target="_blank" rel="noopener noreferrer" style={{ color: theme.primary }}>openrouter.ai</a> — {text.replace(/^go to openrouter\.ai /i, "")}</> : text}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
@@ -1936,8 +2339,15 @@ Provide 2-5 meaningfully different choices. ALWAYS include at least 1 choice unl
           {phase === "setup" && (
             <div style={{ maxWidth: 600, margin: "0 auto" }}>
               <div style={{ textAlign: "center", marginBottom: 32 }}>
-                <h1 style={{ fontFamily: theme.heading, color: theme.primary, fontSize: 32, margin: "0 0 8px", letterSpacing: 2, textShadow: `0 0 40px ${theme.primary}30` }}>
-                  {theme.icon} {t("adventureAwaits")}
+                <div style={{
+                  fontFamily: theme.heading, color: theme.primary,
+                  fontSize: 12, letterSpacing: 5, textTransform: "uppercase",
+                  opacity: 0.8, marginBottom: 10,
+                }}>
+                  ✦ {t("brandName")} ✦
+                </div>
+                <h1 style={{ fontFamily: theme.heading, color: theme.text, fontSize: "clamp(24px, 5vw, 32px)", margin: "0 0 8px", letterSpacing: "-0.01em", fontWeight: 400 }}>
+                  {config.genre ? `${theme.icon} ${t("adventureAwaits")}` : t("adventureAwaits")}
                 </h1>
                 {config.genre && <GenreIconStrip theme={theme} />}
                 <p style={{ fontFamily: theme.body, color: theme.textMuted, fontSize: 14, margin: 0 }}>
@@ -2047,6 +2457,20 @@ Provide 2-5 meaningfully different choices. ALWAYS include at least 1 choice unl
           onResult={handleRollResult}
           isRTL={isRTL}
           t={t}
+        />
+      )}
+
+      {/* Help modal */}
+      {showHelp && <HelpModal theme={theme} t={t} isRTL={isRTL} onClose={() => setShowHelp(false)} />}
+
+      {/* Settings modal */}
+      {showSettings && (
+        <SettingsModal
+          theme={theme} t={t} isRTL={isRTL}
+          prefs={prefs} setPrefs={setPrefs}
+          musicEnabled={musicEnabled} setMusicEnabled={setMusicEnabled}
+          musicVolume={musicVolume} setMusicVolume={setMusicVolume}
+          onClose={() => setShowSettings(false)}
         />
       )}
 

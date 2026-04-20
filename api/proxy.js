@@ -6,7 +6,10 @@ function isAllowedOrigin(origin) {
   if (!origin) return false;
   if (origin === "http://localhost:5173") return true;
   if (process.env.ALLOWED_ORIGIN && origin === process.env.ALLOWED_ORIGIN) return true;
-  return /^https:\/\/choose-your-adventure[a-z0-9-]*\.vercel\.app$/.test(origin);
+  // Accept both legacy and new Vercel project names
+  if (/^https:\/\/choose-your-adventure[a-z0-9-]*\.vercel\.app$/.test(origin)) return true;
+  if (/^https:\/\/openstory-ai[a-z0-9-]*\.vercel\.app$/.test(origin)) return true;
+  return false;
 }
 
 module.exports = async function handler(req, res) {
@@ -59,8 +62,8 @@ module.exports = async function handler(req, res) {
       headers: {
         "Authorization": `Bearer ${key}`,
         "Content-Type":  "application/json",
-        "HTTP-Referer":  "https://choose-your-adventure.vercel.app",
-        "X-Title":       "Choose Your Adventure",
+        "HTTP-Referer":  "https://openstory-ai.vercel.app",
+        "X-Title":       "OpenStory AI",
       },
       body: JSON.stringify(body),
     });

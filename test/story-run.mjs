@@ -34,7 +34,7 @@ if (args.includes("--help")) {
   console.log(`Usage: node test/story-run.mjs [options]
   --turns N       Number of turns to run (default: 20)
   --genre GENRE   fantasy | scifi | reality | mystery (default: fantasy)
-  --lang LANG     English | Hebrew | Arabic (default: English)
+  --lang LANG     English | Hebrew | Arabic | Portuguese (default: English)
   --verbose       Print story text and choices each turn
   --save FILE     Save full results to JSON file`);
   process.exit(0);
@@ -46,9 +46,9 @@ const LANG    = argVal("--lang",   "English");
 const VERBOSE = args.includes("--verbose");
 const SAVE    = argVal("--save", null);
 
-const VALID_LANGS = new Set(["English", "Hebrew", "Arabic"]);
+const VALID_LANGS = new Set(["English", "Hebrew", "Arabic", "Portuguese"]);
 if (!VALID_LANGS.has(LANG)) {
-  console.error(`❌  Unknown language "${LANG}". Use: English | Hebrew | Arabic`);
+  console.error(`❌  Unknown language "${LANG}". Use: English | Hebrew | Arabic | Portuguese`);
   process.exit(1);
 }
 
@@ -118,6 +118,8 @@ function buildPerspectiveLine(lang) {
     return 'כתוב בגוף שני. השתמש ב"אתה", "שלך". דוגמה: "אתה שולף את חרבך וצועד אל החשיכה."';
   if (lang === "Arabic")
     return 'اكتب بضمير المخاطب. استخدم "أنت"، "لك". مثال: "تسلّ سيفك وتخطو نحو الظلام."';
+  if (lang === "Portuguese")
+    return 'Escreva em SEGUNDA PESSOA. Use "você", "seu/sua". Exemplo: "Você desembainha sua espada e avança para a escuridão."';
   return 'Write in SECOND PERSON. Use "you", "your". Example: "You draw your sword and step into the dark."';
 }
 
